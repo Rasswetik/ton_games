@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Market - TON Gifts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header-main">
+            <div class="user-info">
+                <img id="tg-avatar" class="avatar-small" src="" alt="" onerror="this.src='{{ url_for('static', filename='img/default.png') }}'">
+                <span id="tg-username" class="username-text">Загрузка...</span>
+            </div>
+            
+            <div id="ton-connect-header"></div>
+        </div>
+
+        <main class="market-container" style="padding: 16px; flex-grow: 1; overflow-y: auto;">
+            <div class="gifts-grid" id="gifts-list">
+                </div>
+        </main>
+
+<nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+                <span>Маркет</span>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <span>Крафты</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Профиль</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="buy-modal" class="modal">
+        <div class="modal-content">
+            <img id="modal-img" src="" alt="Gift" style="width: 120px; height: 120px; object-fit: contain;">
+            <h2 id="modal-name" style="margin: 15px 0;">Название</h2>
+            <button id="confirm-buy-btn" class="buy-button-final">Купить</button>
+            <button onclick="closeModal()" class="close-btn">Отмена</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        // Инициализация TonConnect
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: window.location.origin + '/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect-header'
+        });
+
+        // Получаем данные из Telegram
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            document.getElementById('tg-username').textContent = tg.initDataUnsafe.user.first_name;
+            if (tg.initDataUnsafe.user.photo_url) {
+                document.getElementById('tg-avatar').src = tg.initDataUnsafe.user.photo_url;
+            }
+        }
+
+        // Функция загрузки подарков
+        async function loadGifts() {
+            const container = document.getElementById('gifts-list');
+            try {
+                // Прямая ссылка через Flask
+                const jsonPath = "{{ url_for('static', filename='data/gifts.json') }}";
+                const response = await fetch(jsonPath);
+                
+                if (!response.ok) throw new Error('Файл JSON не найден');
+                
+                const gifts = await response.json();
+                container.innerHTML = ''; 
+
+                gifts.forEach(gift => {
+                    const card = document.createElement('div');
+                    card.className = 'gift-card';
+                    card.innerHTML = `
+                        <div class="gift-img-wrapper">
+                            <img src="${gift.image}" alt="${gift.name}" onerror="this.src='{{ url_for('static', filename='img/default.png') }}'">
+                        </div>
+                        <div class="gift-price">${gift.price} TON</div>
+                    `;
+                    card.onclick = () => openModal(gift);
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error("Ошибка загрузки:", e);
+                container.innerHTML = `<p style='text-align:center; color:#999; width:100%; grid-column: 1 / span 2; padding: 40px 0;'>
+                    Подарки временно недоступны.<br>
+                    <small>Проверьте наличие файла static/data/gifts.json</small>
+                </p>`;
+            }
+        }
+
+        function openModal(gift) {
+            document.getElementById('modal-img').src = gift.image;
+            document.getElementById('modal-name').innerText = gift.name;
+            document.getElementById('buy-modal').classList.add('active');
+            
+            document.getElementById('confirm-buy-btn').onclick = async () => {
+                const transaction = {
+                    validUntil: Math.floor(Date.now() / 1000) + 60,
+                    messages: [{
+                        address: "UQDw7-rC3VhNeN5VUjV_Kz5TVBJ5pX4EEI_OOSdU8J0oQkOh",
+                        amount: (gift.price * 1000000000).toString()
+                    }]
+                };
+                try {
+                    await tonConnectUI.sendTransaction(transaction);
+                    alert('Покупка совершена успешно!');
+                    closeModal();
+                } catch (e) { 
+                    console.error("Ошибка транзакции:", e);
+                }
+            };
+        }
+
+        function closeModal() {
+            document.getElementById('buy-modal').classList.remove('active');
+        }
+
+        // Запуск
+        loadGifts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="profile-header">
+            <div class="avatar-container">
+                <svg id="default-avatar" class="avatar-large-svg" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <img id="tg-avatar-large" class="avatar-large" src="" style="display: none;">
+            </div>
+            <h2 id="tg-username-large" class="username-text-profile">Пользователь</h2>
+        </div>
+
+        <div class="profile-actions-row">
+            <button class="btn-action-short">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span>Продать</span>
+            </button>
+            <button class="btn-action-short" onclick="openPromo()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg>
+                <span>Промо</span>
+            </button>
+        </div>
+
+        <div class="inventory-section">
+            <h3 class="inventory-title">Ваш инвентарь</h3>
+            <div class="empty-inventory">
+                <img src="{{ url_for('static', filename='gifs/gift.gif') }}" class="empty-gif">
+                <p>Тут пока пусто</p>
+            </div>
+        </div>
+
+<nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+                <span>Маркет</span>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <span>Крафты</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Профиль</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="promo-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3>Активация кода</h3>
+                <button onclick="closePromo()" style="background:none; border:none; font-size:24px;">×</button>
+            </div>
+            <div class="promo-input-group">
+                <input type="text" placeholder="Введите код..." id="promo-field">
+                <button class="promo-submit-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>	

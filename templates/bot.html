@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div id="wallet-lock-screen" class="bet-overlay" style="display: flex;">
+            <div class="bet-box">
+                <div id="lock-icon" style="font-size: 50px; margin-bottom: 20px;">💎</div>
+                <h3 id="lock-title">Требуется кошелек</h3>
+                <p id="lock-text" style="color: #666; margin-bottom: 20px; font-size: 14px;">Для игры необходимо подключить TON кошелек.</p>
+                <div id="ton-connect-bot" style="display: flex; justify-content: center;"></div>
+            </div>
+        </div>
+        <div id="bet-screen" class="bet-overlay" style="display: none;"><div class="bet-box"><h3>Укажите ставку</h3><input type="number" id="bet-input" placeholder="0.1" step="0.1"><button onclick="handleStart()">Играть и оплатить</button></div></div>
+        <div class="game-header"><a href="/index.html" class="back-btn">✕</a><div class="score-board" id="score">0 : 0</div></div>
+        <div class="arena">
+            <div class="hand-container top-hand" id="bot-container"><img src="/img/camen.png" id="bot-hand" class="hand"></div>
+            <div id="game-status" class="game-status"></div>
+            <div class="hand-container bottom-hand" id="player-container"><img src="/img/camen.png" id="player-hand" class="hand"></div>
+        </div>
+        <div class="controls" id="game-controls" style="opacity: 0; pointer-events: none;">
+            <button class="choice-btn" onclick="play('camen')"><img src="/img/camen.png"><span>Камень</span></button>
+            <button class="choice-btn" onclick="play('nojnici')"><img src="/img/nojnici.png"><span>Ножницы</span></button>
+            <button class="choice-btn" onclick="play('paper')"><img src="/img/paper.png"><span>Бумага</span></button>
+        </div>
+    </div>
+    <script>
+        const tg = window.Telegram.WebApp; let ps = 0; let bs = 0;
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: window.location.origin + '/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect-bot'
+        });
+        tonConnectUI.onStatusChange(wallet => {
+            if (wallet) { document.getElementById('wallet-lock-screen').style.display = 'none'; document.getElementById('bet-screen').style.display = 'flex'; }
+            else { document.getElementById('wallet-lock-screen').style.display = 'flex'; document.getElementById('bet-screen').style.display = 'none'; }
+        });
+        async function handleStart() {
+            const betAmount = document.getElementById('bet-input').value; if (!betAmount || betAmount <= 0) return alert("Введите сумму");
+            try {
+                const transaction = { validUntil: Math.floor(Date.now() / 1000) + 60, messages: [{ address: "UQDw7-rC3VhNeN5VUjV_Kz5TVBJ5pX4EEI_OOSdU8J0oQkOh", amount: (parseFloat(betAmount) * 1000000000).toString() }] };
+                const result = await tonConnectUI.sendTransaction(transaction);
+                if (result) startEntrance();
+            } catch (e) { alert("Ошибка оплаты"); }
+        }
+        function startEntrance() {
+            document.getElementById('bet-screen').style.display = 'none';
+            document.getElementById('bot-container').classList.add('slide-in-top');
+            document.getElementById('player-container').classList.add('slide-in-bottom');
+            setTimeout(() => { document.getElementById('game-status').textContent = "Ваш выбор?"; document.getElementById('game-controls').style.opacity = '1'; document.getElementById('game-controls').style.pointerEvents = 'auto'; }, 1000);
+        }
+        function play(p) {
+            const hands = ['camen', 'nojnici', 'paper']; const b = hands[Math.floor(Math.random() * 3)];
+            const ph = document.getElementById('player-hand'); const bh = document.getElementById('bot-hand'); const st = document.getElementById('game-status');
+            document.getElementById('game-controls').style.pointerEvents = 'none';
+            ph.src = bh.src = "/img/camen.png"; ph.classList.add('shaking-v'); bh.classList.add('shaking-v');
+            st.textContent = "Раз... Два... Три!";
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+            setTimeout(() => {
+                ph.classList.remove('shaking-v'); bh.classList.remove('shaking-v');
+                ph.src = `/img/${p}.png`; bh.src = `/img/${b}.png`;
+                if (p === b) st.textContent = "Ничья";
+                else if ((p==='camen'&&b==='nojnici')||(p==='nojnici'&&b==='paper')||(p==='paper'&&b==='camen')) { st.textContent = "Вы выиграли!"; ps++; }
+                else { st.textContent = "Бот выиграл"; bs++; }
+                document.getElementById('score').textContent = `${ps} : ${bs}`;
+                setTimeout(() => { st.textContent = "Ещё раз?"; document.getElementById('game-controls').style.pointerEvents = 'auto'; }, 1500);
+            }, 1100);
+        }
+    </script>
+</body>
+</html>

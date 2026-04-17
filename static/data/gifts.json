@@ -1,0 +1,686 @@
+[
+    {
+        "id": "vicecream",
+        "name": "Vice Cream",
+        "price": 2.39,
+        "image": "/static/img/gifts/vicecream.png"
+    },
+    {
+        "id": "chillflame",
+        "name": "Chill Flame",
+        "price": 2.63,
+        "image": "/static/img/gifts/chillflame.png"
+    },
+    {
+        "id": "snakebox",
+        "name": "Snake Box",
+        "price": 2.75,
+        "image": "/static/img/gifts/snakebox.png"
+    },
+    {
+        "id": "candycane",
+        "name": "Candy Cane",
+        "price": 2.77,
+        "image": "/static/img/gifts/candycane.png"
+    },
+    {
+        "id": "lunarsnake",
+        "name": "Lunar Snake",
+        "price": 2.9,
+        "image": "/static/img/gifts/lunarsnake.png"
+    },
+    {
+        "id": "instantramen",
+        "name": "Instant Ramen",
+        "price": 2.91,
+        "image": "/static/img/gifts/instantramen.png"
+    },
+    {
+        "id": "xmasstocking",
+        "name": "Xmas Stocking",
+        "price": 2.94,
+        "image": "/static/img/gifts/xmasstocking.png"
+    },
+    {
+        "id": "icecream",
+        "name": "Ice Cream",
+        "price": 3.05,
+        "image": "/static/img/gifts/icecream.png"
+    },
+    {
+        "id": "poolfloat",
+        "name": "Pool Float",
+        "price": 3.08,
+        "image": "/static/img/gifts/poolfloat.png"
+    },
+    {
+        "id": "tamagadget",
+        "name": "Tama Gadget",
+        "price": 3.09,
+        "image": "/static/img/gifts/tamagadget.png"
+    },
+    {
+        "id": "freshsocks",
+        "name": "Fresh Socks",
+        "price": 3.18,
+        "image": "/static/img/gifts/freshsocks.png"
+    },
+    {
+        "id": "whipcupcake",
+        "name": "Whip Cupcake",
+        "price": 3.19,
+        "image": "/static/img/gifts/whipcupcake.png"
+    },
+    {
+        "id": "holidaydrink",
+        "name": "Holiday Drink",
+        "price": 3.19,
+        "image": "/static/img/gifts/holidaydrink.png"
+    },
+    {
+        "id": "lolpop",
+        "name": "Lol Pop",
+        "price": 3.28,
+        "image": "/static/img/gifts/lolpop.png"
+    },
+    {
+        "id": "winterwreath",
+        "name": "Winter Wreath",
+        "price": 3.3,
+        "image": "/static/img/gifts/winterwreath.png"
+    },
+    {
+        "id": "santahat",
+        "name": "Santa Hat",
+        "price": 3.33,
+        "image": "/static/img/gifts/santahat.png"
+    },
+    {
+        "id": "petsnake",
+        "name": "Pet Snake",
+        "price": 3.34,
+        "image": "/static/img/gifts/petsnake.png"
+    },
+    {
+        "id": "jesterhat",
+        "name": "Jester Hat",
+        "price": 3.38,
+        "image": "/static/img/gifts/jesterhat.png"
+    },
+    {
+        "id": "happybrownie",
+        "name": "Happy Brownie",
+        "price": 3.4,
+        "image": "/static/img/gifts/happybrownie.png"
+    },
+    {
+        "id": "bdaycandle",
+        "name": "B-Day Candle",
+        "price": 3.41,
+        "image": "/static/img/gifts/bdaycandle.png"
+    },
+    {
+        "id": "bigyear",
+        "name": "Big Year",
+        "price": 3.41,
+        "image": "/static/img/gifts/bigyear.png"
+    },
+    {
+        "id": "victorymedal",
+        "name": "Victory Medal",
+        "price": 3.46,
+        "image": "/static/img/gifts/victorymedal.png"
+    },
+    {
+        "id": "partysparkler",
+        "name": "Party Sparkler",
+        "price": 3.51,
+        "image": "/static/img/gifts/partysparkler.png"
+    },
+    {
+        "id": "moodpack",
+        "name": "Mood Pack",
+        "price": 3.58,
+        "image": "/static/img/gifts/moodpack.png"
+    },
+    {
+        "id": "homemadecake",
+        "name": "Homemade Cake",
+        "price": 3.67,
+        "image": "/static/img/gifts/homemadecake.png"
+    },
+    {
+        "id": "hypnolollipop",
+        "name": "Hypno Lollipop",
+        "price": 3.67,
+        "image": "/static/img/gifts/hypnolollipop.png"
+    },
+    {
+        "id": "gingercookie",
+        "name": "Ginger Cookie",
+        "price": 3.79,
+        "image": "/static/img/gifts/gingercookie.png"
+    },
+    {
+        "id": "moussecake",
+        "name": "Mousse Cake",
+        "price": 3.83,
+        "image": "/static/img/gifts/moussecake.png"
+    },
+    {
+        "id": "moneypot",
+        "name": "Money Pot",
+        "price": 3.83,
+        "image": "/static/img/gifts/moneypot.png"
+    },
+    {
+        "id": "stellarrocket",
+        "name": "Stellar Rocket",
+        "price": 3.86,
+        "image": "/static/img/gifts/stellarrocket.png"
+    },
+    {
+        "id": "spicedwine",
+        "name": "Spiced Wine",
+        "price": 3.88,
+        "image": "/static/img/gifts/spicedwine.png"
+    },
+    {
+        "id": "cloverpin",
+        "name": "Clover Pin",
+        "price": 3.89,
+        "image": "/static/img/gifts/cloverpin.png"
+    },
+    {
+        "id": "cookieheart",
+        "name": "Cookie Heart",
+        "price": 3.99,
+        "image": "/static/img/gifts/cookieheart.png"
+    },
+    {
+        "id": "starnotepad",
+        "name": "Star Notepad",
+        "price": 4.0,
+        "image": "/static/img/gifts/starnotepad.png"
+    },
+    {
+        "id": "springbasket",
+        "name": "Spring Basket",
+        "price": 4.14,
+        "image": "/static/img/gifts/springbasket.png"
+    },
+    {
+        "id": "prettyposy",
+        "name": "Pretty Posy",
+        "price": 4.15,
+        "image": "/static/img/gifts/prettyposy.png"
+    },
+    {
+        "id": "swagbag",
+        "name": "Swag Bag",
+        "price": 4.18,
+        "image": "/static/img/gifts/swagbag.png"
+    },
+    {
+        "id": "bowtie",
+        "name": "Bow Tie",
+        "price": 4.18,
+        "image": "/static/img/gifts/bowtie.png"
+    },
+    {
+        "id": "faithamulet",
+        "name": "Faith Amulet",
+        "price": 4.19,
+        "image": "/static/img/gifts/faithamulet.png"
+    },
+    {
+        "id": "hexpot",
+        "name": "Hex Pot",
+        "price": 4.27,
+        "image": "/static/img/gifts/hexpot.png"
+    },
+    {
+        "id": "snoopdogg",
+        "name": "Snoop Dogg",
+        "price": 4.3,
+        "image": "/static/img/gifts/snoopdogg.png"
+    },
+    {
+        "id": "jackinthebox",
+        "name": "Jack-in-the-Box",
+        "price": 4.4,
+        "image": "/static/img/gifts/jackinthebox.png"
+    },
+    {
+        "id": "snowglobe",
+        "name": "Snow Globe",
+        "price": 4.49,
+        "image": "/static/img/gifts/snowglobe.png"
+    },
+    {
+        "id": "easteregg",
+        "name": "Easter Egg",
+        "price": 4.66,
+        "image": "/static/img/gifts/easteregg.png"
+    },
+    {
+        "id": "moonpendant",
+        "name": "Moon Pendant",
+        "price": 4.7,
+        "image": "/static/img/gifts/moonpendant.png"
+    },
+    {
+        "id": "spyagaric",
+        "name": "Spy Agaric",
+        "price": 4.74,
+        "image": "/static/img/gifts/spyagaric.png"
+    },
+    {
+        "id": "witchhat",
+        "name": "Witch Hat",
+        "price": 4.79,
+        "image": "/static/img/gifts/witchhat.png"
+    },
+    {
+        "id": "restlessjar",
+        "name": "Restless Jar",
+        "price": 4.9,
+        "image": "/static/img/gifts/restlessjar.png"
+    },
+    {
+        "id": "inputkey",
+        "name": "Input Key",
+        "price": 4.95,
+        "image": "/static/img/gifts/inputkey.png"
+    },
+    {
+        "id": "timelessbook",
+        "name": "Timeless Book",
+        "price": 5.04,
+        "image": "/static/img/gifts/timelessbook.png"
+    },
+    {
+        "id": "lightsword",
+        "name": "Light Sword",
+        "price": 5.09,
+        "image": "/static/img/gifts/lightsword.png"
+    },
+    {
+        "id": "eternalcandle",
+        "name": "Eternal Candle",
+        "price": 5.18,
+        "image": "/static/img/gifts/eternalcandle.png"
+    },
+    {
+        "id": "lushbouquet",
+        "name": "Lush Bouquet",
+        "price": 5.79,
+        "image": "/static/img/gifts/lushbouquet.png"
+    },
+    {
+        "id": "deskcalendar",
+        "name": "Desk Calendar",
+        "price": 5.83,
+        "image": "/static/img/gifts/deskcalendar.png"
+    },
+    {
+        "id": "jollychimp",
+        "name": "Jolly Chimp",
+        "price": 5.94,
+        "image": "/static/img/gifts/jollychimp.png"
+    },
+    {
+        "id": "jellybunny",
+        "name": "Jelly Bunny",
+        "price": 5.99,
+        "image": "/static/img/gifts/jellybunny.png"
+    },
+    {
+        "id": "joyfulbundle",
+        "name": "Joyful Bundle",
+        "price": 6.29,
+        "image": "/static/img/gifts/joyfulbundle.png"
+    },
+    {
+        "id": "bunnymuffin",
+        "name": "Bunny Muffin",
+        "price": 6.64,
+        "image": "/static/img/gifts/bunnymuffin.png"
+    },
+    {
+        "id": "snowmittens",
+        "name": "Snow Mittens",
+        "price": 6.73,
+        "image": "/static/img/gifts/snowmittens.png"
+    },
+    {
+        "id": "evileye",
+        "name": "Evil Eye",
+        "price": 6.79,
+        "image": "/static/img/gifts/evileye.png"
+    },
+    {
+        "id": "berrybox",
+        "name": "Berry Box",
+        "price": 7.6,
+        "image": "/static/img/gifts/berrybox.png"
+    },
+    {
+        "id": "jinglebells",
+        "name": "Jingle Bells",
+        "price": 8.19,
+        "image": "/static/img/gifts/jinglebells.png"
+    },
+    {
+        "id": "sleighbell",
+        "name": "Sleigh Bell",
+        "price": 8.29,
+        "image": "/static/img/gifts/sleighbell.png"
+    },
+    {
+        "id": "hangingstar",
+        "name": "Hanging Star",
+        "price": 8.39,
+        "image": "/static/img/gifts/hangingstar.png"
+    },
+    {
+        "id": "valentinebox",
+        "name": "Valentine Box",
+        "price": 8.59,
+        "image": "/static/img/gifts/valentinebox.png"
+    },
+    {
+        "id": "sakuraflower",
+        "name": "Sakura Flower",
+        "price": 9.25,
+        "image": "/static/img/gifts/sakuraflower.png"
+    },
+    {
+        "id": "lovecandle",
+        "name": "Love Candle",
+        "price": 9.69,
+        "image": "/static/img/gifts/lovecandle.png"
+    },
+    {
+        "id": "skullflower",
+        "name": "Skull Flower",
+        "price": 9.7,
+        "image": "/static/img/gifts/skullflower.png"
+    },
+    {
+        "id": "tophat",
+        "name": "Top Hat",
+        "price": 9.71,
+        "image": "/static/img/gifts/tophat.png"
+    },
+    {
+        "id": "crystalball",
+        "name": "Crystal Ball",
+        "price": 10.2,
+        "image": "/static/img/gifts/crystalball.png"
+    },
+    {
+        "id": "snoopcigar",
+        "name": "Snoop Cigar",
+        "price": 10.4,
+        "image": "/static/img/gifts/snoopcigar.png"
+    },
+    {
+        "id": "flyingbroom",
+        "name": "Flying Broom",
+        "price": 10.9,
+        "image": "/static/img/gifts/flyingbroom.png"
+    },
+    {
+        "id": "ufcstrike",
+        "name": "UFC Strike",
+        "price": 11.7,
+        "image": "/static/img/gifts/ufcstrike.png"
+    },
+    {
+        "id": "madpumpkin",
+        "name": "Mad Pumpkin",
+        "price": 11.9,
+        "image": "/static/img/gifts/madpumpkin.png"
+    },
+    {
+        "id": "trappedheart",
+        "name": "Trapped Heart",
+        "price": 12.4,
+        "image": "/static/img/gifts/trappedheart.png"
+    },
+    {
+        "id": "recordplayer",
+        "name": "Record Player",
+        "price": 13.4,
+        "image": "/static/img/gifts/recordplayer.png"
+    },
+    {
+        "id": "lovepotion",
+        "name": "Love Potion",
+        "price": 13.6,
+        "image": "/static/img/gifts/lovepotion.png"
+    },
+    {
+        "id": "skystilettos",
+        "name": "Sky Stilettos",
+        "price": 14.2,
+        "image": "/static/img/gifts/skystilettos.png"
+    },
+    {
+        "id": "ionicdryer",
+        "name": "Ionic Dryer",
+        "price": 15.3,
+        "image": "/static/img/gifts/ionicdryer.png"
+    },
+    {
+        "id": "cupidcharm",
+        "name": "Cupid Charm",
+        "price": 18.7,
+        "image": "/static/img/gifts/cupidcharm.png"
+    },
+    {
+        "id": "khabibspapakha",
+        "name": "Khabib's Papakha",
+        "price": 20.8,
+        "image": "/static/img/gifts/khabibspapakha.png"
+    },
+    {
+        "id": "rarebird",
+        "name": "Rare Bird",
+        "price": 22.4,
+        "image": "/static/img/gifts/rarebird.png"
+    },
+    {
+        "id": "eternalrose",
+        "name": "Eternal Rose",
+        "price": 24.0,
+        "image": "/static/img/gifts/eternalrose.png"
+    },
+    {
+        "id": "blingbinky",
+        "name": "Bling Binky",
+        "price": 25.9,
+        "image": "/static/img/gifts/blingbinky.png"
+    },
+    {
+        "id": "diamondring",
+        "name": "Diamond Ring",
+        "price": 26.1,
+        "image": "/static/img/gifts/diamondring.png"
+    },
+    {
+        "id": "voodoodoll",
+        "name": "Voodoo Doll",
+        "price": 29.9,
+        "image": "/static/img/gifts/voodoodoll.png"
+    },
+    {
+        "id": "electricskull",
+        "name": "Electric Skull",
+        "price": 31.5,
+        "image": "/static/img/gifts/electricskull.png"
+    },
+    {
+        "id": "signetring",
+        "name": "Signet Ring",
+        "price": 32.0,
+        "image": "/static/img/gifts/signetring.png"
+    },
+    {
+        "id": "vintagecigar",
+        "name": "Vintage Cigar",
+        "price": 33.7,
+        "image": "/static/img/gifts/vintagecigar.png"
+    },
+    {
+        "id": "nekohelmet",
+        "name": "Neko Helmet",
+        "price": 35.3,
+        "image": "/static/img/gifts/nekohelmet.png"
+    },
+    {
+        "id": "toybear",
+        "name": "Toy Bear",
+        "price": 40.9,
+        "image": "/static/img/gifts/toybear.png"
+    },
+    {
+        "id": "sharptongue",
+        "name": "Sharp Tongue",
+        "price": 43.9,
+        "image": "/static/img/gifts/sharptongue.png"
+    },
+    {
+        "id": "swisswatch",
+        "name": "Swiss Watch",
+        "price": 44.9,
+        "image": "/static/img/gifts/swisswatch.png"
+    },
+    {
+        "id": "genielamp",
+        "name": "Genie Lamp",
+        "price": 44.9,
+        "image": "/static/img/gifts/genielamp.png"
+    },
+    {
+        "id": "bondedring",
+        "name": "Bonded Ring",
+        "price": 46.8,
+        "image": "/static/img/gifts/bondedring.png"
+    },
+    {
+        "id": "lowrider",
+        "name": "Low Rider",
+        "price": 49.9,
+        "image": "/static/img/gifts/lowrider.png"
+    },
+    {
+        "id": "kissedfrog",
+        "name": "Kissed Frog",
+        "price": 52.9,
+        "image": "/static/img/gifts/kissedfrog.png"
+    },
+    {
+        "id": "gemsignet",
+        "name": "Gem Signet",
+        "price": 64.9,
+        "image": "/static/img/gifts/gemsignet.png"
+    },
+    {
+        "id": "magicpotion",
+        "name": "Magic Potion",
+        "price": 69.0,
+        "image": "/static/img/gifts/magicpotion.png"
+    },
+    {
+        "id": "artisanbrick",
+        "name": "Artisan Brick",
+        "price": 69.9,
+        "image": "/static/img/gifts/artisanbrick.png"
+    },
+    {
+        "id": "iongem",
+        "name": "Ion Gem",
+        "price": 83.9,
+        "image": "/static/img/gifts/iongem.png"
+    },
+    {
+        "id": "minioscar",
+        "name": "Mini Oscar",
+        "price": 88.9,
+        "image": "/static/img/gifts/minioscar.png"
+    },
+    {
+        "id": "perfumebottle",
+        "name": "Perfume Bottle",
+        "price": 96.5,
+        "image": "/static/img/gifts/perfumebottle.png"
+    },
+    {
+        "id": "westsidesign",
+        "name": "Westside Sign",
+        "price": 103.8,
+        "image": "/static/img/gifts/westsidesign.png"
+    },
+    {
+        "id": "nailbracelet",
+        "name": "Nail Bracelet",
+        "price": 124.9,
+        "image": "/static/img/gifts/nailbracelet.png"
+    },
+    {
+        "id": "lootbag",
+        "name": "Loot Bag",
+        "price": 138.8,
+        "image": "/static/img/gifts/lootbag.png"
+    },
+    {
+        "id": "mightyarm",
+        "name": "Mighty Arm",
+        "price": 151.5,
+        "image": "/static/img/gifts/mightyarm.png"
+    },
+    {
+        "id": "scaredcat",
+        "name": "Scared Cat",
+        "price": 174.8,
+        "image": "/static/img/gifts/scaredcat.png"
+    },
+    {
+        "id": "astralshard",
+        "name": "Astral Shard",
+        "price": 184.9,
+        "image": "/static/img/gifts/astralshard.png"
+    },
+    {
+        "id": "heroichelmet",
+        "name": "Heroic Helmet",
+        "price": 223.3,
+        "image": "/static/img/gifts/heroichelmet.png"
+    },
+    {
+        "id": "preciouspeach",
+        "name": "Precious Peach",
+        "price": 387.9,
+        "image": "/static/img/gifts/preciouspeach.png"
+    },
+    {
+        "id": "durovscap",
+        "name": "Durov's Cap",
+        "price": 679.9,
+        "image": "/static/img/gifts/durovscap.png"
+    },
+    {
+        "id": "heartlocket",
+        "name": "Heart Locket",
+        "price": 1724.0,
+        "image": "/static/img/gifts/heartlocket.png"
+    },
+    {
+        "id": "plushpepe",
+        "name": "Plush Pepe",
+        "price": 7469.0,
+        "image": "/static/img/gifts/plushpepe.png"
+    }
+]

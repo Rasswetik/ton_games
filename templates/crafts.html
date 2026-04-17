@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крафты</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <style>
+        /* Перекрытие стилей из style.css для правильной работы панели */
+        .bottom-nav {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 100% !important;
+            max-width: 480px !important;
+            height: 75px !important;
+            background: #ffffff !important;
+            border-top: 1px solid #f0f0f5 !important;
+            display: flex !important;
+            justify-content: space-around !important;
+            align-items: center !important;
+            padding: 0 10px !important;
+            z-index: 5000 !important;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #8e8e93;
+            font-size: 11px;
+            font-weight: 700;
+            flex: 1;
+            transition: 0.3s;
+        }
+
+        .nav-item.active {
+            color: #0088cc;
+        }
+
+        /* Анимация исчезновения картинок при крафте */
+        .slot-fade-out img {
+            animation: fadeScale 0.5s forwards;
+        }
+        @keyframes fadeScale {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body style="background: #f7f9fb; margin: 0; padding-bottom: 100px;">
+    <div class="app-container">
+        <div class="craft-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 20px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <img class="craft-avatar" src="/static/gifs/bot.gif" style="width: 36px; height: 36px; border-radius: 50%;">
+                <span class="username-text" style="font-weight: 700;">Загрузка...</span>
+            </div>
+            <div id="ton-connect-custom"></div>
+        </div>
+
+        <h2 style="text-align: center; margin: 10px 0; font-weight: 900;">КРАФТ</h2>
+        
+        <div id="craft-slots" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px;"></div>
+
+        <div id="craft-range" style="text-align: center; color: #8e8e93; font-weight: 700; font-size: 13px; margin: 10px 0; min-height: 40px;">
+            Добавьте предметы (0/3)
+        </div>
+        
+        <button class="btn-craft" id="craft-btn" disabled onclick="doCraft()">КРАФТ</button>
+
+        <h3 style="margin: 25px 20px 10px; font-weight: 800;">Ваш инвентарь</h3>
+        <div id="craft-inventory" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 0 15px;"></div>
+
+        <nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M3 9h18l-2 11H5L3 9z"></path><path d="M9 22V12h6v10"></path></svg>
+                <span>Маркет</span>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item active" style="color:#0088cc">
+                <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                <span>Крафты</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Профиль</span>
+            </a>
+        </nav>
+                <a href="{{ url_for('crafts') }}" class="nav-item active" style="color:#0088cc">
+                    <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                    <span>Крафты</span>
+                </a>
+                <a href="{{ url_for('profile') }}" class="nav-item">
+                    <svg class="nav-icon" viewBox="0 0 24 24" stroke-width="2" style="width:24px; height:24px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span>Профиль</span>
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <div id="win-overlay" class="win-overlay">
+        <div class="win-card">
+            <h2 style="margin: 0; font-size: 24px;">УСПЕХ!</h2>
+            <img id="win-img" src="" style="width: 140px; height: 140px; object-fit: contain; margin: 20px 0;">
+            <div id="win-price" style="font-size: 28px; font-weight: 900; color: #0088cc;"></div>
+            <button class="btn-craft" style="width: 100%; margin-top: 20px; background: #0088cc; color: white; border: none;" onclick="location.reload()">ЗАБРАТЬ</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        let selectedItems = [];
+        let userData = GameState.getUser();
+        let playerInv = userData.inventory || [];
+
+        function renderUI() {
+            const slots = document.getElementById('craft-slots');
+            slots.innerHTML = '';
+            let sumPrice = 0;
+
+            for (let i = 0; i < 10; i++) {
+                const s = document.createElement('div');
+                s.className = 'craft-slot' + (selectedItems[i] ? ' filled' : '');
+                if (selectedItems[i]) {
+                    sumPrice += selectedItems[i].price;
+                    s.innerHTML = `<img src="${selectedItems[i].image}" style="width: 80%;">`;
+                    s.onclick = () => {
+                        playerInv.push(selectedItems.splice(i, 1)[0]);
+                        renderUI();
+                    };
+                }
+                slots.appendChild(s);
+            }
+
+            const inv = document.getElementById('craft-inventory');
+            inv.innerHTML = '';
+            playerInv.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'craft-inv-item';
+                div.innerHTML = `<img src="${item.image}" style="width: 100%;"><div style="font-size: 10px; font-weight: 700; margin-top: 5px;">${item.price} TON</div>`;
+                div.onclick = () => {
+                    if (selectedItems.length < 10) {
+                        selectedItems.push(playerInv.splice(index, 1)[0]);
+                        renderUI();
+                    }
+                };
+                inv.appendChild(div);
+            });
+
+            const btn = document.getElementById('craft-btn');
+            const rangeText = document.getElementById('craft-range');
+            
+            if (selectedItems.length < 3) {
+                btn.disabled = true;
+                rangeText.textContent = `Добавьте предметы (${selectedItems.length}/3)`;
+            } else {
+                btn.disabled = false;
+                // Диапазон: 20% - 400%
+                const min = (sumPrice * 0.2).toFixed(2);
+                const max = (sumPrice * 4).toFixed(2);
+                rangeText.innerHTML = `Шанс получить:<br><b style="color:#000">${min} - ${max} TON</b>`;
+            }
+        }
+
+        async function doCraft() {
+            const btn = document.getElementById('craft-btn');
+            btn.disabled = true;
+
+            const filledSlots = document.querySelectorAll('.craft-slot.filled');
+            filledSlots.forEach(slot => slot.classList.add('slot-fade-out'));
+
+            await new Promise(r => setTimeout(r, 600));
+
+            const gifts = GameState.getDemoGifts();
+            const win = gifts[Math.floor(Math.random() * gifts.length)];
+            
+            userData.inventory = playerInv;
+            userData.inventory.push(win);
+            GameState.saveUser(userData);
+
+            document.getElementById('win-img').src = win.image;
+            document.getElementById('win-price').textContent = win.price + " TON";
+            document.getElementById('win-overlay').style.display = 'flex';
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
