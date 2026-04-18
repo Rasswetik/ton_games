@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+📋 ИНСТРУКЦИЯ ДЕПЛОЯ НА PYTHONANYWHERE
+Откройте Web Console и выполните эти команды
+"""
+
+commands = """
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                 ДЕПЛОЙ НА PYTHONANYWHERE - WEB CONSOLE                     ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+1️⃣  ОТКРОЙТЕ WEB CONSOLE НА PYTHONANYWHERE:
+    https://www.pythonanywhere.com/user/rpsgames/webapps/#tab_id_console-1
+
+2️⃣  ВЫПОЛНИТЕ КОМАНДЫ (по одной, подряд):
+
+──────────────────────────────────────────────────────────────────────────────
+# Обновить проект с GitHub
+cd ~/mysite
+git pull origin main
+
+──────────────────────────────────────────────────────────────────────────────
+# Переустановить Python зависимости
+pip install -r requirements.txt --user
+
+──────────────────────────────────────────────────────────────────────────────
+# Перезагрузить приложение
+touch /var/www/rpsgames_pythonanywhere_com_wsgi.py
+
+──────────────────────────────────────────────────────────────────────────────
+# Проверить ошибки (если не работает)
+tail -50 /var/log/rpsgames.pythonanywhere.com.error.log
+
+──────────────────────────────────────────────────────────────────────────────
+
+3️⃣  ЕСЛИ GIT ЗАПРАШИВАЕТ ПАРОЛЬ:
+    Введите PAT (Personal Access Token) вместо пароля
+    Токен можно создать: https://github.com/settings/tokens
+
+4️⃣  ПОСЛЕ ДЕПЛОЯ:
+    🌍 https://rpsgames.pythonanywhere.com
+    
+    ✅ Проверьте:
+    - Админ панель: https://rpsgames.pythonanywhere.com/admin_panel
+    - Профиль: https://rpsgames.pythonanywhere.com/profile
+    - Маркет: https://rpsgames.pythonanywhere.com/market
+
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                    ✅ ГОТОВО К РАЗВЁРТЫВАНИЮ!                             ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+"""
+
+print(commands)
+
+# Сохранить инструкцию в файл
+with open("DEPLOY_INSTRUCTIONS.txt", "w", encoding="utf-8") as f:
+    f.write(commands)
+
+print("\n📝 Инструкция сохранена в DEPLOY_INSTRUCTIONS.txt")
