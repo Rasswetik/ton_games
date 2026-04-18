@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ Панель</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        .admin-container {
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #0088cc 0%, #0077b5 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        .admin-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 900;
+        }
+        
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #f0f3f6;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+        }
+        
+        .tab-btn {
+            background: white;
+            border: 2px solid #d0d7de;
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn.active {
+            background: #0088cc;
+            color: white;
+            border-color: #0088cc;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            color: #000;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #222;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d0d7de;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #0088cc;
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.1);
+        }
+        
+        .btn-create {
+            background: white;
+            color: black;
+            border: 3px solid black;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-create:active {
+            background: #f5f5f5;
+        }
+        
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .item-card {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 4px;
+        }
+        
+        .item-details {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+        }
+        
+        .btn-copy::before {
+            content: "📋";
+        }
+        
+        .btn-link::before {
+            content: "🔗";
+        }
+        
+        .btn-delete::before {
+            content: "🗑️";
+        }
+        
+        .btn-edit::before {
+            content: "✏️";
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #8e8e93;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .users-table thead {
+            background: #f0f3f6;
+            border-bottom: 2px solid #d0d7de;
+        }
+        
+        .users-table th, .users-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .users-table th {
+            font-weight: 700;
+            color: #000;
+        }
+        
+        .users-table td {
+            color: #666;
+        }
+        
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>⚙️ Админ Панель</h1>
+        </div>
+        
+        <div class="admin-tabs">
+            <button class="tab-btn active" onclick="switchTab('promos')">📝 Промокоды</button>
+            <button class="tab-btn" onclick="switchTab('users')">👥 Пользователи</button>
+            <button class="tab-btn" onclick="switchTab('gifts')">🎁 Подарки</button>
+        </div>
+        
+        <!-- ПРОМОКОДЫ -->
+        <div id="promos-tab" class="tab-content active">
+            <h2 class="section-title">Создание промокода</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Имя промокода</label>
+                <input type="text" id="promo-name" class="form-input" placeholder="SUMMER2024">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Тип награды</label>
+                <select id="promo-type" class="form-select">
+                    <option value="balance">💰 Баланс (TON)</option>
+                    <option value="gift">🎁 Подарок</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Количество</label>
+                <input type="number" id="promo-amount" class="form-input" placeholder="1.5">
+            </div>
+            
+            <div class="form-group" id="gift-select-group" style="display: none;">
+                <label class="form-label">Выберите подарок</label>
+                <select id="promo-gift" class="form-select"></select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Максимум активаций</label>
+                <input type="number" id="promo-max" class="form-input" placeholder="100" value="100">
+            </div>
+            
+            <button class="btn-create" onclick="createPromo()">Создать промокод</button>
+            
+            <h2 class="section-title" style="margin-top: 25px;">Все промокоды</h2>
+            <div id="promos-list" class="items-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <p>Нет промокодов</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ПОЛЬЗОВАТЕЛИ -->
+        <div id="users-tab" class="tab-content">
+            <h2 class="section-title">Управление пользователями</h2>
+            
+            <div style="overflow-x: auto;">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Баланс</th>
+                            <th>Предметы</th>
+                            <th>История</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #8e8e93; padding: 20px;">
+                                Загрузка...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- ПОДАРКИ -->
+        <div id="gifts-tab" class="tab-content">
+            <h2 class="section-title">Добавить новый подарок</h2>
+            
+            <div class="form-group">
+                <label class="form-label">ID подарка</label>
+                <input type="text" id="gift-id" class="form-input" placeholder="my_gift_id">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Название</label>
+                <input type="text" id="gift-name" class="form-input" placeholder="Мой подарок">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Цена (TON)</label>
+                <input type="number" id="gift-price" class="form-input" placeholder="2.99" step="0.01">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">URL изображения</label>
+                <input type="text" id="gift-image" class="form-input" placeholder="/static/img/gifts/name.png">
+            </div>
+            
+            <button class="btn-create" onclick="addGift()">Добавить подарок</button>
+            
+            <h2 class="section-title" style="margin-top: 25px;">Все подарки</h2>
+            <div id="gifts-list" class="items-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎁</div>
+                    <p>Загрузка подарков...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    
+    <script>
+        const tg = window.Telegram.WebApp;
+        let currentUserId = null;
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tgUser = tg.initDataUnsafe?.user;
+            currentUserId = tgUser?.id || 'admin_' + Math.random().toString(36).substr(2, 9);
+            
+            // Проверяем админа
+            const response = await fetch('/api/user/data/' + currentUserId);
+            const data = await response.json();
+            
+            if (!data.is_admin) {
+                document.body.innerHTML = '<h1 style="text-align:center; padding-top: 50px;">❌ Доступ запрещен</h1>';
+                return;
+            }
+            
+            // Загружаем данные
+            loadPromos();
+            loadUsers();
+            loadGifts();
+            setupEventListeners();
+        });
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tab + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function setupEventListeners() {
+            const typeSelect = document.getElementById('promo-type');
+            typeSelect.addEventListener('change', (e) => {
+                const giftGroup = document.getElementById('gift-select-group');
+                if (e.target.value === 'gift') {
+                    giftGroup.style.display = 'block';
+                } else {
+                    giftGroup.style.display = 'none';
+                }
+            });
+        }
+        
+        // ===== ПРОМОКОДЫ =====
+        
+        async function loadPromos() {
+            try {
+                const response = await fetch(`/api/promo/list?user_id=${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.promos && data.promos.length > 0) {
+                    const html = data.promos.map(promo => `
+                        <div class="item-card">
+                            <div class="item-info">
+                                <div class="item-name">${promo.name}</div>
+                                <div class="item-details">
+                                    ${promo.type === 'balance' ? '💰' : '🎁'} ${promo.reward_amount || promo.reward_gift}
+                                    | ${promo.activations} активаций
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn-action btn-copy" onclick="copyText('${promo.name}')"></button>
+                                <button class="btn-action btn-link" onclick="copyText('${promo.link}')"></button>
+                                <button class="btn-action btn-delete" onclick="deletePromo('${promo.name}')"></button>
+                            </div>
+                        </div>
+                    `).join('');
+                    document.getElementById('promos-list').innerHTML = html;
+                } else {
+                    document.getElementById('promos-list').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <p>Нет промокодов</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('❌ Ошибка загрузки промокодов:', e);
+            }
+        }
+        
+        async function createPromo() {
+            const name = document.getElementById('promo-name').value;
+            const type = document.getElementById('promo-type').value;
+            const amount = parseFloat(document.getElementById('promo-amount').value);
+            const maxActivations = parseInt(document.getElementById('promo-max').value);
+            let gift = null;
+            
+            if (type === 'gift') {
+                gift = document.getElementById('promo-gift').value;
+            }
+            
+            if (!name || !amount) {
+                alert('❌ Заполните все поля');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/promo/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        promo_name: name,
+                        reward_type: type,
+                        reward_amount: type === 'balance' ? amount : null,
+                        reward_gift: type === 'gift' ? gift : null,
+                        max_activations: maxActivations
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Промокод создан!');
+                    document.getElementById('promo-name').value = '';
+                    document.getElementById('promo-amount').value = '';
+                    loadPromos();
+                } else {
+                    alert('❌ Ошибка создания промокода');
+                }
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        }
+        
+        async function deletePromo(name) {
+            if (!confirm('Удалить промокод ' + name + '?')) return;
+            
+            try {
+                const response = await fetch('/api/promo/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        promo_name: name
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Промокод удален!');
+                    loadPromos();
+                }
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        }
+        
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            alert('✅ Скопировано!');
+        }
+        
+        // ===== ПОЛЬЗОВАТЕЛИ =====
+        
+        async function loadUsers() {
+            try {
+                const response = await fetch(`/api/admin/users?user_id=${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.users && data.users.length > 0) {
+                    const html = data.users.map(user => `
+                        <tr onclick="editUser('${user.user_id}')">
+                            <td>${user.user_id.substring(0, 8)}...</td>
+                            <td>${user.balance}</td>
+                            <td>${user.inventory_count}</td>
+                            <td>${user.history_count}</td>
+                            <td><button class="btn-edit"></button></td>
+                        </tr>
+                    `).join('');
+                    document.getElementById('users-table-body').innerHTML = html;
+                }
+            } catch (e) {
+                console.error('❌ Ошибка загрузки пользователей:', e);
+            }
+        }
+        
+        async function editUser(userId) {
+            try {
+                const response = await fetch(`/api/admin/user/${userId}?user_id=${currentUserId}`);
+                const user = await response.json();
+                
+                const html = `
+                    <div class="modal-header">Редактирование пользователя</div>
+                    <div class="form-group">
+                        <label class="form-label">ID пользователя</label>
+                        <input type="text" value="${user.user_id}" disabled class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Баланс</label>
+                        <input type="number" id="edit-balance" class="form-input" value="${user.balance}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">История активности (последние 5)</label>
+                        <div style="background: #f0f3f6; padding: 10px; border-radius: 8px; font-size: 12px;">
+                            ${user.history.slice(-5).reverse().map(h => `<div>${h.action} - ${h.timestamp}</div>`).join('')}
+                        </div>
+                    </div>
+                    <button class="btn-create" onclick="saveUserChanges('${userId}')">Сохранить</button>
+                `;
+                
+                document.getElementById('modal-body').innerHTML = html;
+                document.getElementById('edit-modal').classList.add('active');
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        }
+        
+        async function saveUserChanges(userId) {
+            const newBalance = parseFloat(document.getElementById('edit-balance').value);
+            
+            try {
+                const response = await fetch('/api/admin/user/edit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_id: currentUserId,
+                        user_id: userId,
+                        balance: newBalance
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Изменения сохранены!');
+                    closeModal();
+                    loadUsers();
+                }
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        }
+        
+        // ===== ПОДАРКИ =====
+        
+        async function loadGifts() {
+            try {
+                const response = await fetch(`/api/admin/gifts?user_id=${currentUserId}`);
+                const data = await response.json();
+                
+                const selectGift = document.getElementById('promo-gift');
+                selectGift.innerHTML = data.gifts.map(gift => 
+                    `<option value="${gift.id}">${gift.name}</option>`
+                ).join('');
+                
+                const html = data.gifts.map(gift => `
+                    <div class="item-card">
+                        <div class="item-info">
+                            <div class="item-name">${gift.name}</div>
+                            <div class="item-details">💰 ${gift.price} TON</div>
+                        </div>
+                        <button class="btn-action btn-edit" onclick="editGift('${gift.id}')"></button>
+                    </div>
+                `).join('');
+                
+                document.getElementById('gifts-list').innerHTML = html;
+            } catch (e) {
+                console.error('❌ Ошибка загрузки подарков:', e);
+            }
+        }
+        
+        async function addGift() {
+            const id = document.getElementById('gift-id').value;
+            const name = document.getElementById('gift-name').value;
+            const price = parseFloat(document.getElementById('gift-price').value);
+            const image = document.getElementById('gift-image').value;
+            
+            if (!id || !name || !price || !image) {
+                alert('❌ Заполните все поля');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/gift/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_id: currentUserId,
+                        id, name, price, image
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Подарок добавлен!');
+                    document.getElementById('gift-id').value = '';
+                    document.getElementById('gift-name').value = '';
+                    document.getElementById('gift-price').value = '';
+                    document.getElementById('gift-image').value = '';
+                    loadGifts();
+                }
+            } catch (e) {
+                alert('❌ ' + e.message);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+        }
+    </script>
+</body>
+</html>

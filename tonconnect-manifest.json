@@ -1,5 +1,7 @@
 {
-  "url": "https://your-domain.ngrok-free.app",
-  "name": "TON Game Bot",
-  "iconUrl": "https://your-domain.ngrok-free.app/static/img/camen.png"
+  "url": "https://rpsgames.pythonanywhere.com",
+  "name": "RPS Game",
+  "description": "Play Rock-Paper-Scissors and earn TON",
+  "iconUrl": "https://rpsgames.pythonanywhere.com/static/img/icon.png",
+  "termsOfUseUrl": "https://rpsgames.pythonanywhere.com"
 }

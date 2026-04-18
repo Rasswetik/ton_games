@@ -1,181 +1,176 @@
 #!/usr/bin/env python3
 """
-Скрипт для деплоя Luna Gifts на Timeweb Cloud
-Использует Timeweb API для загрузки приложения
+Deploy скрипт для PythonAnywhere
+Использование: python deploy.py <username> <api_token>
 """
 
 import requests
+import sys
 import json
 import os
-import zipfile
-import sys
+import subprocess
 from pathlib import Path
 
-# API конфиги
-TIMEWEB_API_URL = "https://api.timeweb.cloud/api/v1"
-API_TOKEN = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCIsImtpZCI6IjFrYnhacFJNQGJSI0tSbE1xS1lqIn0.eyJ1c2VyIjoid3E4MDU2MTAiLCJ0eXBlIjoiYXBpX2tleSIsImFwaV9rZXlfaWQiOiI2NjAxODdhNy01NTEzLTQzN2ItOTE3Zi0xOTk1ZWFiOWUyYmYiLCJpYXQiOjE3NzY0Mjk0MTZ9.fTei_ZOn-WfrnggGkyt5VWUkFp8SSf-Rcycs51jR8ar_AcUdjesxKOJfQSjiiWiNsB779knN_Gqu-Zupo4a0-I6rqj08dOIYaT6o3wTyQA7-OqqdtfDrQKx1nGrAYXpkoY1jQEeisB9prvfboLO4UWrVQW_tb_Cp7Ix3C-wyLdGNKgOMRlsOKFM6EdORAGXzNEZQxZqLuieWzdldJ_cZw3t7_TEg9b2AiEYVw_dPE3k6Vkq3Sn23Ugn5ejlQZvbvFrLwjSQgLFwYb12DcYFAfj9qozmO0xMtsmtROzx4Mz8qy3I4lTJBCkdo5EGWGtpUxg3gDTXv_DKrIVKgIp3Kk5gAqFWUbdMD2px9Wh5SYK91SWEF0QleKfaXa7GCkjsOdi4zDZqx6V7GGtdti92Na3VQRwubUPOgSeZ-yTP4nvNoaO-OxjdqJxB8wz9n9CMLQr9WfkUwSFzyzGuYPrR-IcVEPwHrwQ9yayurViC9nPxf56LNFILbQ2PIe4X5zH7T"
-
-HEADERS = {
-    "Authorization": f"Bearer {API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-def get_apps():
-    """Получить список приложений"""
-    try:
-        response = requests.get(f"{TIMEWEB_API_URL}/apps", headers=HEADERS)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"❌ Ошибка при получении списка приложений: {e}")
-        return None
-
-def get_or_create_app():
-    """Получить или создать приложение Luna Gifts"""
-    print("\n📦 Проверяю список приложений...")
-    
-    try:
-        response = requests.get(f"{TIMEWEB_API_URL}/apps", headers=HEADERS)
-        response.raise_for_status()
-        apps = response.json().get("apps", [])
-        
-        # Ищем приложение RPS GAME
-        for app in apps:
-            if "rps" in app.get("name", "").lower() or "game" in app.get("name", "").lower():
-                print(f"✅ Найдено приложение: {app['name']} (ID: {app['id']})")
-                return app
-        
-        # Если не найдено, создаем новое
-        print("📝 Приложение не найдено. Создаю новое...")
-        
-        app_data = {
-            "name": "RPS GAME",
-            "language": "python",
-            "framework": "flask"
+class PythonAnywhereDeployer:
+    def __init__(self, username, api_token):
+        self.username = username
+        self.api_token = api_token
+        self.base_url = "https://www.pythonanywhere.com/api/v0"
+        self.headers = {
+            "Authorization": f"Token {api_token}",
+            "Content-Type": "application/json"
         }
+        self.app_name = f"{username}.pythonanywhere.com"
+    
+    def log(self, msg, level="INFO"):
+        """Логирование"""
+        icons = {"INFO": "ℹ️", "SUCCESS": "✅", "ERROR": "❌", "WARN": "⚠️"}
+        print(f"{icons.get(level, '•')} [{level}] {msg}")
+    
+    def upload_files(self):
+        """Загрузить файлы через Git или SFTP"""
+        self.log("📦 Загрузка файлов проекта...", "INFO")
         
-        response = requests.post(
-            f"{TIMEWEB_API_URL}/apps",
-            headers=HEADERS,
-            json=app_data
-        )
-        response.raise_for_status()
-        new_app = response.json()
-        print(f"✅ Приложение создано: {new_app['name']} (ID: {new_app['id']})")
-        return new_app
-        
-    except Exception as e:
-        print(f"❌ Ошибка при работе с приложением: {e}")
-        return None
-
-def create_project_zip():
-    """Создать zip архив с проектом"""
-    print("\n📦 Создаю архив проекта...")
-    
-    project_dir = Path(".")
-    zip_path = Path("luna_gifts.zip")
-    
-    # Исключаемые файлы и папки
-    exclude = {
-        "__pycache__", ".git", ".venv", "venv", ".idea", ".vscode",
-        "*.pyc", "*.pyo", "*.egg-info", "deploy.py", "luna_gifts.zip",
-        ".gitignore", "Procfile"
-    }
-    
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for file_path in project_dir.rglob('*'):
-            if file_path.is_file():
-                # Проверяем, не исключен ли файл
-                if any(exc in str(file_path) for exc in exclude):
-                    continue
-                
-                # Добавляем только нужные файлы
-                arcname = str(file_path.relative_to(project_dir))
-                zf.write(file_path, arcname)
-                print(f"  + {arcname}")
-    
-    print(f"✅ Архив создан: {zip_path} ({zip_path.stat().st_size / 1024:.1f} KB)")
-    return zip_path
-
-def upload_project(app_id, zip_path):
-    """Загрузить проект на сервер"""
-    print(f"\n📤 Загружаю проект на сервер...")
-    
-    try:
-        with open(zip_path, 'rb') as f:
-            files = {'file': f}
-            response = requests.post(
-                f"{TIMEWEB_API_URL}/apps/{app_id}/upload",
-                headers={
-                    "Authorization": f"Bearer {API_TOKEN}",
-                },
-                files=files
-            )
-            response.raise_for_status()
-            print(f"✅ Проект загружен успешно!")
+        try:
+            # Проверяем есть ли git
+            subprocess.run(["git", "--version"], check=True, capture_output=True)
+            self.log("🔗 Git найден, используем Git для деплоя", "INFO")
+            
+            # Инициализируем git repo если нужно
+            if not Path('.git').exists():
+                subprocess.run(["git", "init"], check=True)
+                subprocess.run(["git", "config", "user.email", "deploy@bot.local"], check=True)
+                subprocess.run(["git", "config", "user.name", "Deploy Bot"], check=True)
+            
+            # Добавляем файлы
+            subprocess.run(["git", "add", "."], check=True)
+            subprocess.run(["git", "commit", "-m", "Deploy update"], 
+                          capture_output=True)
+            
+            self.log("✅ Файлы готовы к загрузке", "SUCCESS")
             return True
-    except Exception as e:
-        print(f"❌ Ошибка при загрузке: {e}")
-        return False
-
-def deploy_app(app_id):
-    """Развернуть приложение"""
-    print(f"\n🚀 Разворачиваю приложение...")
+            
+        except Exception as e:
+            self.log(f"❌ Ошибка подготовки файлов: {e}", "ERROR")
+            return False
     
-    try:
-        response = requests.post(
-            f"{TIMEWEB_API_URL}/apps/{app_id}/deploy",
-            headers=HEADERS,
-            json={}
-        )
-        response.raise_for_status()
-        print(f"✅ Приложение развернуто!")
-        return True
-    except Exception as e:
-        print(f"⚠️ Ошибка при развертывании: {e}")
-        print("Это может быть нормально - проверьте статус в панели Timeweb")
+    def reload_web_app(self):
+        """Перезагрузить веб-приложение"""
+        self.log("🔄 Перезагрузка приложения...", "INFO")
+        
+        try:
+            url = f"{self.base_url}/user/{self.username}/webapps/{self.app_name}/reload/"
+            response = requests.post(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                self.log("✅ Приложение перезагружено", "SUCCESS")
+                return True
+            else:
+                self.log(f"❌ Ошибка перезагрузки: {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Ошибка: {e}", "ERROR")
+            return False
+    
+    def check_status(self):
+        """Проверить статус приложения"""
+        self.log("🔍 Проверка статуса приложения...", "INFO")
+        
+        try:
+            url = f"{self.base_url}/user/{self.username}/webapps/{self.app_name}/"
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                status = data.get('status', 'unknown')
+                self.log(f"Статус: {status}", "INFO")
+                return True
+            else:
+                self.log(f"❌ Не удалось получить статус: {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Ошибка: {e}", "ERROR")
+            return False
+    
+    def get_error_log(self):
+        """Получить последние ошибки"""
+        self.log("📋 Получение логов ошибок...", "INFO")
+        
+        try:
+            url = f"{self.base_url}/user/{self.username}/webapps/{self.app_name}/error_log/"
+            response = requests.get(url, headers=self.headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                lines = data.get('lines', [])
+                
+                if lines:
+                    self.log("Последние ошибки:", "INFO")
+                    for line in lines[-10:]:  # Последние 10 строк
+                        print(f"  {line}")
+                else:
+                    self.log("Нет ошибок", "SUCCESS")
+                    
+                return True
+            else:
+                self.log(f"❌ Не удалось получить логи: {response.text}", "ERROR")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Ошибка: {e}", "ERROR")
+            return False
+    
+    def deploy(self):
+        """Выполнить полный деплой"""
+        self.log("🚀 Начало деплоя на PythonAnywhere", "INFO")
+        self.log(f"👤 Username: {self.username}", "INFO")
+        self.log(f"🌐 App: {self.app_name}", "INFO")
+        print()
+        
+        # 1. Загружаем файлы
+        if not self.upload_files():
+            return False
+        
+        # 2. Проверяем статус
+        if not self.check_status():
+            self.log("⚠️ Не удалось проверить статус, но продолжаем", "WARN")
+        
+        # 3. Перезагружаем приложение
+        if not self.reload_web_app():
+            return False
+        
+        # 4. Проверяем логи
+        self.get_error_log()
+        
+        print()
+        self.log("=" * 50, "SUCCESS")
+        self.log("🎉 Деплой завершен успешно!", "SUCCESS")
+        self.log(f"🌐 Ваш сайт: https://{self.app_name}", "SUCCESS")
+        self.log("=" * 50, "SUCCESS")
+        
         return True
 
 def main():
-    """Главная функция"""
-    print("=" * 60)
-    print("� ДЕПЛОЙ RPS GAME НА TIMEWEB CLOUD")
-    print("=" * 60)
-    
-    # Проверяем наличие токена
-    if not API_TOKEN:
-        print("❌ API токен не найден!")
+    if len(sys.argv) < 3:
+        print("Использование: python deploy.py <username> <api_token>")
+        print()
+        print("Параметры:")
+        print("  <username> - ваше имя пользователя на PythonAnywhere")
+        print("  <api_token> - ваш API токен")
+        print()
+        print("Пример:")
+        print("  python deploy.py myusername 299a1d0450b8726e11d9e04f21a5c8bb04a54bb0")
         sys.exit(1)
     
-    # Получаем или создаем приложение
-    app = get_or_create_app()
-    if not app:
-        print("❌ Не удалось получить или создать приложение")
-        sys.exit(1)
+    username = sys.argv[1]
+    api_token = sys.argv[2]
     
-    app_id = app.get('id')
+    deployer = PythonAnywhereDeployer(username, api_token)
+    success = deployer.deploy()
     
-    # Создаем архив
-    zip_path = create_project_zip()
-    
-    # Загружаем проект
-    if not upload_project(app_id, zip_path):
-        sys.exit(1)
-    
-    # Развертываем приложение
-    deploy_app(app_id)
-    
-    # Очищаем временные файлы
-    if zip_path.exists():
-        zip_path.unlink()
-        print(f"✅ Временный архив удален")
-    
-    print("\n" + "=" * 60)
-    print("✅ ДЕПЛОЙ ЗАВЕРШЕН!")
-    print("=" * 60)
-    print(f"\n📍 Приложение: RPS GAME (ID: {app_id})")
-    print("🔗 Откройте панель Timeweb для просмотра деталей")
-    print("=" * 60)
+    sys.exit(0 if success else 1)
 
 if __name__ == "__main__":
     main()

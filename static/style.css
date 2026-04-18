@@ -719,3 +719,64 @@ body {
     justify-content: center;
     cursor: pointer;
 }
+
+/* ============================================================
+   TON CONNECT ИНТЕГРАЦИЯ
+   ============================================================ */
+#ton-connect-custom {
+    display: flex;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+#ton-connect-custom button,
+#ton-connect-custom [role="button"] {
+    background: var(--primary) !important;
+    color: white !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+#ton-connect-custom button:hover,
+#ton-connect-custom [role="button"]:hover {
+    background: var(--primary-dark) !important;
+    box-shadow: 0 6px 16px rgba(0, 136, 204, 0.4) !important;
+}
+
+.wallet-address {
+    font-size: 12px;
+    color: var(--text-light);
+    font-family: 'Courier New', monospace;
+    padding: 0 8px;
+    background: #f0f3f6;
+    border-radius: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.balance-display {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.wallet-info-block {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
