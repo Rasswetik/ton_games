@@ -194,11 +194,14 @@ window.GameState = {
 
     getUser() {
         let user = localStorage.getItem('user_data');
-        if (!user || user === "undefined" || JSON.parse(user).inventory.length === 0) {
-            const all = this.getDemoGifts();
-            // Даем пользователю 12 предметов для теста
-            const startInv = [...all, ...all].slice(0, 12);
-            user = { name: "Player", balance: 100.0, inventory: startInv };
+        if (!user || user === "undefined") {
+            // НОВЫЙ ПОЛЬЗОВАТЕЛЬ - НЕ ДАЕМ НАЧАЛЬНЫЕ ПРЕДМЕТЫ!
+            user = { 
+                name: "Player", 
+                balance: 0, 
+                inventory: [],
+                is_new: true
+            };
             this.saveUser(user);
             return user;
         }

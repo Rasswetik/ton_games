@@ -1,0 +1,58 @@
+{
+  "guest_yxmkcyqu4": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:48:43.283481",
+    "history": []
+  },
+  "guest_rj83f70e6": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:48:45.378417",
+    "history": []
+  },
+  "guest_940fu9roa": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:48:51.152311",
+    "history": []
+  },
+  "guest_i764llizd": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:48:53.324302",
+    "history": []
+  },
+  "guest_fhlr45q4b": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:49:29.849521",
+    "history": []
+  },
+  "guest_kvf5qd5bz": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:49:41.556901",
+    "history": []
+  },
+  "guest_m7theafne": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T16:49:43.814673",
+    "history": []
+  }
+}

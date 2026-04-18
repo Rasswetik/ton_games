@@ -10,34 +10,21 @@
 </head>
 <body>
     <div class="app-container">
-        <div class="header-main">
-            <div class="user-info">
-                <img id="tg-avatar" class="avatar-small" src="" alt="" style="display: none;">
-                <span id="tg-username" class="username-text">Загрузка...</span>
-            </div>
-            
-            <div id="wallet-connect-block">
-                <div id="ton-connect-custom"></div>
-            </div>
-
-            <div class="wallet-section" id="wallet-info-block" style="display: none;">
-                <div class="balance-badge">
-                    <svg class="ton-svg-icon" viewBox="0 0 56 56" fill="none">
-                        <path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0088CC"/>
-                        <path d="M13.13 15.31H42.87L28 42.13L13.13 15.31ZM25.35 18.74V34.5L16.48 18.74H25.35ZM30.65 34.5V18.74H39.52L30.65 34.5Z" fill="white"/>
+        <!-- TOP HEADER С АВАТАРОМ И ИМЕНЕМ -->
+        <div class="top-header">
+            <div class="header-user-info">
+                <div class="header-avatar-container">
+                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    <span id="user-balance">0.0</span>
+                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
                 </div>
-                <button class="deposit-btn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                </button>
+                <span id="header-username" class="header-username">Пользователь</span>
             </div>
         </div>
 
-<div class="menu-list">
+<div class="menu-list" style="margin-top: 80px;">
     <a href="#" class="btn-game-large multiplayer">
         <img src="{{ url_for('static', filename='gifs/multi.gif') }}" class="game-gif-large" alt="multi">
         <div class="btn-text-content">
@@ -88,5 +75,27 @@
     </div>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
-</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                }
+                
+                // Показать админ панель для нужных пользователей
+                const adminIds = [7679909245, 5257227556];
+                if (adminIds.includes(tgUser.id)) {
+                    document.getElementById('admin-btn').style.display = 'block';
+                }
+            }
+        });
+    </script></body>
 </html>

@@ -10,16 +10,21 @@
 </head>
 <body>
     <div class="app-container">
-        <div class="header-main">
-            <div class="user-info">
-                <img id="tg-avatar" class="avatar-small" src="" alt="" onerror="this.src='{{ url_for('static', filename='img/default.png') }}'">
-                <span id="tg-username" class="username-text">Загрузка...</span>
+        <!-- TOP HEADER С АВАТАРОМ И ИМЕНЕМ -->
+        <div class="top-header">
+            <div class="header-user-info">
+                <div class="header-avatar-container">
+                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
+                </div>
+                <span id="header-username" class="header-username">Пользователь</span>
             </div>
-            
-            <div id="ton-connect-header"></div>
         </div>
 
-        <main class="market-container" style="padding: 16px; flex-grow: 1; overflow-y: auto;">
+        <main class="market-container" style="padding: 16px; margin-top: 80px; flex-grow: 1; overflow-y: auto;">
             <div class="gifts-grid" id="gifts-list">
                 </div>
         </main>
@@ -57,6 +62,22 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
+
+        // Инициализация header с аватаром
+        document.addEventListener('DOMContentLoaded', () => {
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                }
+            }
+        });
 
         // Инициализация TonConnect
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({

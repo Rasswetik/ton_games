@@ -2,6 +2,538 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Админ Панель</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- TOP HEADER -->
+        <div class="top-header">
+            <div class="header-user-info">
+                <div class="header-avatar-container">
+                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
+                </div>
+                <span id="header-username" class="header-username">Администратор</span>
+            </div>
+        </div>
+
+        <main style="margin-top: 80px; margin-bottom: 80px; padding: 15px;">
+            <!-- ВКЛАДКИ -->
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="showTab('promos')">🎁 Промокоды</button>
+                <button class="tab-btn" onclick="showTab('users')">👥 Пользователи</button>
+                <button class="tab-btn" onclick="showTab('gifts')">🎀 Подарки</button>
+            </div>
+
+            <!-- РАЗДЕЛ ПРОМОКОДОВ -->
+            <div id="tab-promos" class="tab-content active">
+                <h2>Управление промокодами</h2>
+                
+                <div class="form-group">
+                    <label>Наименование</label>
+                    <input type="text" id="promo-name" placeholder="SUMMER2024" maxlength="20">
+                </div>
+
+                <div class="form-group">
+                    <label>Тип награды</label>
+                    <select id="promo-type" onchange="updatePromoForm()">
+                        <option value="balance">💰 Баланс TON</option>
+                        <option value="gift">🎁 Подарок</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="amount-group">
+                    <label>Количество TON</label>
+                    <input type="number" id="promo-amount" placeholder="10" min="1">
+                </div>
+
+                <div class="form-group" id="gift-group" style="display: none;">
+                    <label>Выберите подарок</label>
+                    <select id="promo-gift">
+                        <option>Загрузка...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Максимум активаций</label>
+                    <input type="number" id="promo-max" placeholder="100" min="1">
+                </div>
+
+                <button class="btn-create" onclick="createPromo()">Создать промокод</button>
+
+                <h3>Список промокодов</h3>
+                <div id="promos-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <!-- РАЗДЕЛ ПОЛЬЗОВАТЕЛЕЙ -->
+            <div id="tab-users" class="tab-content" style="display: none;">
+                <h2>Управление пользователями</h2>
+                
+                <div class="form-group">
+                    <label>ID пользователя</label>
+                    <input type="text" id="user-search" placeholder="Введите ID" onchange="searchUser()">
+                </div>
+
+                <div id="user-info" style="display: none;">
+                    <div class="user-card">
+                        <p><strong>ID:</strong> <span id="user-id"></span></p>
+                        <p><strong>Баланс:</strong> <span id="user-balance"></span> TON</p>
+                        <p><strong>Дата регистрации:</strong> <span id="user-created"></span></p>
+                        
+                        <div class="form-group">
+                            <label>Новый баланс</label>
+                            <input type="number" id="new-balance" step="0.1">
+                            <button onclick="updateUserBalance()" style="width: 100%; padding: 10px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">Обновить</button>
+                        </div>
+
+                        <div>
+                            <h4>Инвентарь</h4>
+                            <div id="user-inventory" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- РАЗДЕЛ ПОДАРКОВ -->
+            <div id="tab-gifts" class="tab-content" style="display: none;">
+                <h2>Управление подарками</h2>
+                
+                <div id="gifts-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <a href="/" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+                <span>Маркет</span>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <span>Крафты</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Профиль</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        let currentUserId = null;
+        let currentSearchUserId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                currentUserId = tgUser.id;
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                }
+            }
+            
+            loadPromos();
+            loadGifts();
+        });
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabName}`).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function updatePromoForm() {
+            const type = document.getElementById('promo-type').value;
+            document.getElementById('amount-group').style.display = type === 'balance' ? 'block' : 'none';
+            document.getElementById('gift-group').style.display = type === 'gift' ? 'block' : 'none';
+        }
+
+        async function createPromo() {
+            const name = document.getElementById('promo-name').value.trim();
+            const type = document.getElementById('promo-type').value;
+            const max = parseInt(document.getElementById('promo-max').value) || 1;
+            
+            if (!name || name.length < 3) {
+                alert('❌ Введите наименование (минимум 3 символа)');
+                return;
+            }
+
+            let reward = {};
+            if (type === 'balance') {
+                reward.type = 'balance';
+                reward.amount = parseFloat(document.getElementById('promo-amount').value) || 1;
+            } else {
+                reward.type = 'gift';
+                reward.gift = document.getElementById('promo-gift').value;
+            }
+
+            try {
+                const response = await fetch('/api/admin/promo/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        name: name,
+                        reward: reward,
+                        max_activations: max
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    alert('✅ Промокод создан!');
+                    document.getElementById('promo-name').value = '';
+                    document.getElementById('promo-amount').value = '';
+                    document.getElementById('promo-max').value = '';
+                    loadPromos();
+                } else {
+                    alert('❌ ' + (data.error || 'Ошибка'));
+                }
+            } catch (e) {
+                alert('❌ Ошибка создания');
+            }
+        }
+
+        async function loadPromos() {
+            try {
+                const response = await fetch('/api/promo/list');
+                const data = await response.json();
+
+                const list = document.getElementById('promos-list');
+                list.innerHTML = '';
+
+                if (data.promos && data.promos.length > 0) {
+                    data.promos.forEach(promo => {
+                        const div = document.createElement('div');
+                        div.className = 'promo-card';
+                        const rewardText = promo.reward.type === 'balance' ? `💰 ${promo.reward.amount} TON` : `🎁 ${promo.reward.gift}`;
+                        div.innerHTML = `
+                            <div>
+                                <strong>${promo.name}</strong>
+                                <p>${rewardText}</p>
+                                <small>Активаций: ${promo.activations}/${promo.max_activations}</small>
+                            </div>
+                            <div class="promo-actions">
+                                <button onclick="copyToClipboard('${promo.name}')">📋</button>
+                                <button onclick="copyLink('${promo.name}')">🔗</button>
+                                <button onclick="deletePromo('${promo.name}')">🗑️</button>
+                            </div>
+                        `;
+                        list.appendChild(div);
+                    });
+                } else {
+                    list.innerHTML = '<p style="color: #999; text-align: center;">Нет промокодов</p>';
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Скопировано: ' + text);
+            });
+        }
+
+        function copyLink(promoName) {
+            const link = `https://t.me/rps_games_bot?start=${promoName}`;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Ссылка скопирована');
+            });
+        }
+
+        async function deletePromo(name) {
+            if (!confirm('Удалить промокод ' + name + '?')) return;
+
+            try {
+                const response = await fetch(`/api/admin/promo/delete?name=${name}&user_id=${currentUserId}`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    alert('✅ Удалено');
+                    loadPromos();
+                } else {
+                    alert('❌ ' + (data.error || 'Ошибка'));
+                }
+            } catch (e) {
+                alert('❌ Ошибка удаления');
+            }
+        }
+
+        async function searchUser() {
+            const userId = document.getElementById('user-search').value;
+            if (!userId) return;
+
+            try {
+                const response = await fetch(`/api/user/get?user_id=${userId}`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    currentSearchUserId = userId;
+                    document.getElementById('user-id').textContent = userId;
+                    document.getElementById('user-balance').textContent = data.balance || 0;
+                    document.getElementById('user-created').textContent = data.created_at || 'Неизвестно';
+                    document.getElementById('new-balance').value = data.balance || 0;
+                    document.getElementById('user-info').style.display = 'block';
+                } else {
+                    alert('❌ Пользователь не найден');
+                }
+            } catch (e) {
+                alert('❌ Ошибка поиска');
+            }
+        }
+
+        async function updateUserBalance() {
+            const newBalance = parseFloat(document.getElementById('new-balance').value);
+
+            if (isNaN(newBalance)) {
+                alert('❌ Введите число');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/user/balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        target_user_id: currentSearchUserId,
+                        balance: newBalance
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    alert('✅ Баланс обновлён');
+                    searchUser();
+                } else {
+                    alert('❌ ' + (data.error || 'Ошибка'));
+                }
+            } catch (e) {
+                alert('❌ Ошибка обновления');
+            }
+        }
+
+        async function loadGifts() {
+            try {
+                const response = await fetch('/static/data/gifts.json');
+                const gifts = await response.json();
+
+                const list = document.getElementById('gifts-list');
+                const select = document.getElementById('promo-gift');
+
+                list.innerHTML = '';
+                select.innerHTML = '';
+
+                gifts.forEach(gift => {
+                    const option = document.createElement('option');
+                    option.value = gift.id;
+                    option.textContent = gift.name;
+                    select.appendChild(option);
+
+                    const div = document.createElement('div');
+                    div.className = 'gift-card';
+                    div.innerHTML = `
+                        <img src="/static/img/gifts/${gift.image}" alt="${gift.name}" onerror="this.src='/static/img/default.png'">
+                        <p>${gift.name}</p>
+                        <small>${gift.price} TON</small>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+    </script>
+
+    <style>
+        .admin-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .tab-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content h2 {
+            margin: 0 0 20px 0;
+            color: #222;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #222;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-create {
+            width: 100%;
+            padding: 12px;
+            background: white;
+            color: #222;
+            border: 2px solid #222;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 25px;
+        }
+
+        .btn-create:active {
+            background: #f0f0f5;
+        }
+
+        .promo-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .promo-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .promo-actions button {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .promo-card strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #222;
+        }
+
+        .promo-card p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .promo-card small {
+            display: block;
+            color: #999;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+
+        .user-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .user-card p {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .user-card h4 {
+            margin: 15px 0 10px 0;
+            color: #222;
+        }
+
+        .gift-card {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .gift-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        .gift-card p {
+            margin: 0;
+            font-weight: 600;
+            color: #222;
+        }
+
+        .gift-card small {
+            color: #666;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ Панель</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">

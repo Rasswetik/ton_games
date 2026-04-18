@@ -6,41 +6,71 @@
     <title>Профиль</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <div class="profile-header">
-            <div class="avatar-container">
-                <svg id="default-avatar" class="avatar-large-svg" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+        <!-- TOP HEADER С АВАТАРОМ И ИМЕНЕМ -->
+        <div class="top-header">
+            <div class="header-user-info">
+                <div class="header-avatar-container">
+                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
+                </div>
+                <span id="header-username" class="header-username">Пользователь</span>
+            </div>
+        </div>
+
+        <!-- ОСНОВНАЯ СОДЕРЖИМОЕ -->
+        <div class="profile-content">
+            <!-- АВАТАР ПРОФИЛЯ -->
+            <div class="profile-avatar-section">
+                <svg id="profile-avatar-svg" class="profile-avatar" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="1.5">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <img id="tg-avatar-large" class="avatar-large" src="" style="display: none;">
+                <img id="profile-avatar-img" class="profile-avatar" src="" style="display: none;">
             </div>
-            <h2 id="tg-username-large" class="username-text-profile">Пользователь</h2>
-        </div>
 
-        <div class="profile-actions-row">
-            <button class="btn-action-short">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                <span>Продать</span>
-            </button>
-            <button class="btn-action-short" onclick="openPromo()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path></svg>
-                <span>Промо</span>
-            </button>
-        </div>
+            <!-- ИНВЕНТАРЬ -->
+            <div class="inventory-section">
+                <h3 class="inventory-title">Ваш инвентарь</h3>
+                <div id="inventory-grid" class="inventory-grid">
+                    <div class="empty-inventory">
+                        <p>Инвентарь пуст</p>
+                    </div>
+                </div>
+            </div>
 
-        <div class="inventory-section">
-            <h3 class="inventory-title">Ваш инвентарь</h3>
-            <div class="empty-inventory">
-                <img src="{{ url_for('static', filename='gifs/gift.gif') }}" class="empty-gif">
-                <p>Тут пока пусто</p>
+            <!-- КНОПКИ ДЕЙСТВИЙ -->
+            <div class="profile-actions">
+                <button class="btn-action sell-all-btn" onclick="sellAllGifts()">
+                    💰 Продать всё
+                </button>
+                <button class="btn-action promo-btn" onclick="openPromoModal()">
+                    🎁 Промокод
+                </button>
             </div>
         </div>
 
-<nav class="bottom-nav">
+        <!-- МОДАЛЬНОЕ ОКНО ПРОМОКОДА -->
+        <div id="promo-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closePromoModal()">×</button>
+                <h2>Активировать промокод</h2>
+                <input type="text" id="promo-code-input" placeholder="Введите промокод..." class="promo-input-field" onkeypress="if(event.key==='Enter') activatePromo()">
+                <div class="promo-buttons">
+                    <button class="btn-primary" onclick="activatePromo()">Активировать</button>
+                    <button class="btn-secondary" onclick="closePromoModal()">Отмена</button>
+                </div>
+                <div id="promo-result" style="margin-top: 15px; text-align: center;"></div>
+            </div>
+        </div>
+
+        <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+        <nav class="bottom-nav">
             <a href="{{ url_for('index') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
                 <span>Главная</span>
@@ -53,27 +83,929 @@
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
                 <span>Крафты</span>
             </a>
-            <a href="{{ url_for('profile') }}" class="nav-item">
+            <a href="{{ url_for('profile') }}" class="nav-item active">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 <span>Профиль</span>
             </a>
         </nav>
     </div>
 
-    <div id="promo-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Активация кода</h3>
-                <button onclick="closePromo()" style="background:none; border:none; font-size:24px;">×</button>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        let currentUserId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                currentUserId = tgUser.id;
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                    
+                    document.getElementById('profile-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('profile-avatar-img').style.display = 'block';
+                    document.getElementById('profile-avatar-svg').style.display = 'none';
+                }
+                
+                loadProfileData();
+            }
+        });
+
+        async function loadProfileData() {
+            try {
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    // Скрыть инвентарь если пользователь новый
+                    if (data.is_new) {
+                        document.querySelector('.inventory-section').style.display = 'none';
+                    } else {
+                        loadInventory(data.inventory || []);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function loadInventory(gifts) {
+            const inventoryGrid = document.getElementById('inventory-grid');
+            
+            if (!gifts || gifts.length === 0) {
+                inventoryGrid.innerHTML = '<div class="empty-inventory"><p>Инвентарь пуст</p></div>';
+                return;
+            }
+
+            inventoryGrid.innerHTML = '';
+            
+            fetch('/static/data/gifts.json')
+                .then(r => r.json())
+                .then(allGifts => {
+                    gifts.forEach(giftId => {
+                        const gift = allGifts.find(g => g.id === giftId);
+                        if (gift) {
+                            const giftDiv = document.createElement('div');
+                            giftDiv.className = 'gift-item';
+                            giftDiv.innerHTML = `
+                                <img src="/static/img/gifts/${gift.image}" alt="${gift.name}">
+                                <p>${gift.name}</p>
+                            `;
+                            inventoryGrid.appendChild(giftDiv);
+                        }
+                    });
+                })
+                .catch(err => console.error('Error loading gifts:', err));
+        }
+
+        function sellAllGifts() {
+            alert('💰 Скоро будет возможность продажи подарков!');
+        }
+
+        function openPromoModal() {
+            document.getElementById('promo-modal').style.display = 'flex';
+            document.getElementById('promo-code-input').focus();
+        }
+
+        function closePromoModal() {
+            document.getElementById('promo-modal').style.display = 'none';
+            document.getElementById('promo-code-input').value = '';
+            document.getElementById('promo-result').innerHTML = '';
+        }
+
+        async function activatePromo() {
+            const promoCode = document.getElementById('promo-code-input').value.trim();
+            
+            if (!promoCode) {
+                alert('Введите промокод!');
+                return;
+            }
+
+            const resultDiv = document.getElementById('promo-result');
+            resultDiv.innerHTML = '<div class="loading-spinner"></div>';
+
+            try {
+                const response = await fetch(`/api/promo/activate/${promoCode}/${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    resultDiv.innerHTML = `<p style="color: green; font-weight: 600;">✅ ${data.message}</p>`;
+                    document.getElementById('promo-code-input').value = '';
+                    loadProfileData();
+                    setTimeout(() => closePromoModal(), 2000);
+                } else {
+                    resultDiv.innerHTML = `<p style="color: red; font-weight: 600;">❌ ${data.error || 'Ошибка'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red; font-weight: 600;">❌ Ошибка активации</p>`;
+            }
+        }
+    </script>
+
+    <style>
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .header-user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .header-avatar-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .header-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .header-username {
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .profile-content {
+            margin-top: 80px;
+            margin-bottom: 80px;
+            padding: 20px;
+        }
+
+        .profile-avatar-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            border: 4px solid #667eea;
+            object-fit: cover;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .inventory-section {
+            margin-bottom: 30px;
+        }
+
+        .inventory-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #222;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .gift-item {
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .gift-item img {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            object-fit: cover;
+        }
+
+        .gift-item p {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .empty-inventory {
+            grid-column: 1 / -1;
+            padding: 30px;
+            text-align: center;
+            color: #999;
+        }
+
+        .profile-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-action {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sell-all-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .sell-all-btn:active {
+            background: #ff5252;
+            transform: scale(0.98);
+        }
+
+        .promo-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .promo-btn:active {
+            background: #45a049;
+            transform: scale(0.98);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #222;
+            font-size: 18px;
+        }
+
+        .promo-input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+
+        .promo-input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .promo-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary:active {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            padding: 12px;
+            background: #ddd;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-secondary:active {
+            background: #ccc;
+        }
+
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ПРОФИЛЬ ХЕДЕР -->
+        <div class="profile-header">
+            <div class="avatar-container">
+                <svg id="default-avatar" class="avatar-large-svg" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <img id="tg-avatar-large" class="avatar-large" src="" style="display: none;">
             </div>
-            <div class="promo-input-group">
-                <input type="text" placeholder="Введите код..." id="promo-field">
-                <button class="promo-submit-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                </button>
+            <h2 id="tg-username-large" class="username-text-profile">Пользователь</h2>
+            
+            <div class="profile-balance">
+                <svg class="ton-svg-icon" viewBox="0 0 56 56" fill="none">
+                    <path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0088CC"/>
+                    <path d="M13.13 15.31H42.87L28 42.13L13.13 15.31ZM25.35 18.74V34.5L16.48 18.74H25.35ZM30.65 34.5V18.74H39.52L30.65 34.5Z" fill="white"/>
+                </svg>
+                <span id="profile-balance-display" class="balance-text">0.0 TON</span>
             </div>
         </div>
+
+        <!-- АКТИВАЦИЯ ПРОМОКОДА -->
+        <div class="promo-activation-section">
+            <h3 class="section-title">Активировать промокод</h3>
+            <div class="promo-input-row">
+                <input type="text" id="promo-code-input" placeholder="Введите промокод..." class="promo-input-field" 
+                       onkeypress="if(event.key==='Enter') activatePromoCode()">
+                <button class="btn-promo-activate" onclick="activatePromoCode()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- РЕЗУЛЬТАТ АКТИВАЦИИ -->
+            <div id="promo-result" class="promo-result" style="display: none;">
+                <div id="promo-result-content" class="promo-result-content"></div>
+            </div>
+        </div>
+
+        <!-- ИНВЕНТАРЬ -->
+        <div class="inventory-section">
+            <h3 class="inventory-title">Ваш инвентарь</h3>
+            <div id="inventory-grid" class="inventory-grid">
+                <div class="empty-inventory">
+                    <p>Инвентарь пуст</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+        <nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                <span>Главная</span>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+                <span>Маркет</span>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                <span>Крафты</span>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item active">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Профиль</span>
+            </a>
+        </nav>
     </div>
+
     <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        let currentUserId = null;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                currentUserId = tgUser.id;
+                document.getElementById('tg-username-large').textContent = 
+                    tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('tg-avatar-large').src = tgUser.photo_url;
+                    document.getElementById('tg-avatar-large').style.display = 'block';
+                    document.getElementById('default-avatar').style.display = 'none';
+                }
+            }
+            
+            // Загружаем инвентарь
+            await loadInventory();
+            
+            // Обновляем баланс
+            await updateBalance();
+        });
+        
+        async function loadInventory() {
+            try {
+                const response = await fetch(`/api/user/data/${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.inventory && data.inventory.length > 0) {
+                    const html = data.inventory.map(item => `
+                        <div class="inventory-item">
+                            <img src="/static/img/gifts/${item.id}.png" alt="${item.name}" class="inventory-img" onerror="this.src='/static/img/gifts/default.png'">
+                            <span class="inventory-name">${item.name}</span>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('inventory-grid').innerHTML = html;
+                } else {
+                    document.getElementById('inventory-grid').innerHTML = `
+                        <div class="empty-inventory">
+                            <p>Инвентарь пуст</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки инвентаря:', e);
+            }
+        }
+        
+        async function updateBalance() {
+            try {
+                const response = await fetch(`/api/ton/balance/${currentUserId}`);
+                const data = await response.json();
+                
+                document.getElementById('profile-balance-display').textContent = 
+                    data.balance.toFixed(2) + ' TON';
+            } catch (e) {
+                console.error('Ошибка получения баланса:', e);
+            }
+        }
+        
+        async function activatePromoCode() {
+            const promoCode = document.getElementById('promo-code-input').value.trim();
+            
+            if (!promoCode) {
+                alert('❌ Введите промокод!');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('promo-result');
+            resultDiv.style.display = 'flex';
+            resultDiv.innerHTML = '<div class="loading-spinner"></div>';
+            
+            try {
+                const response = await fetch(`/api/promo/activate/${promoCode}/${currentUserId}`, {
+                    method: 'GET'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Показываем результат активации
+                    let rewardHTML = '';
+                    
+                    if (data.reward.type === 'balance') {
+                        // TON награда
+                        rewardHTML = `
+                            <div class="reward-display reward-ton">
+                                <svg class="reward-icon-ton" viewBox="0 0 56 56" fill="none">
+                                    <path d="M28 56C43.464 56 56 43.464 56 28C56 12.536 43.464 0 28 0C12.536 0 0 12.536 0 28C0 43.464 12.536 56 28 56Z" fill="#0088CC"/>
+                                    <path d="M13.13 15.31H42.87L28 42.13L13.13 15.31ZM25.35 18.74V34.5L16.48 18.74H25.35ZM30.65 34.5V18.74H39.52L30.65 34.5Z" fill="white"/>
+                                </svg>
+                                <div class="reward-text">
+                                    <p class="reward-amount">+${data.reward.amount} TON</p>
+                                    <p class="reward-label">Добавлено в баланс</p>
+                                </div>
+                            </div>
+                        `;
+                    } else if (data.reward.type === 'gift') {
+                        // Подарок
+                        rewardHTML = `
+                            <div class="reward-display reward-gift">
+                                <img src="${data.reward.image}" alt="${data.reward.name}" class="reward-icon-gift" onerror="this.src='/static/img/gifts/default.png'">
+                                <div class="reward-text">
+                                    <p class="reward-name">${data.reward.name}</p>
+                                    <p class="reward-label">Добавлено в инвентарь</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="promo-success">
+                            <div class="success-icon">✅</div>
+                            ${rewardHTML}
+                            <p class="success-message">${data.message}</p>
+                        </div>
+                    `;
+                    
+                    // Очищаем поле ввода
+                    document.getElementById('promo-code-input').value = '';
+                    
+                    // Обновляем инвентарь и баланс
+                    setTimeout(() => {
+                        loadInventory();
+                        updateBalance();
+                    }, 500);
+                    
+                    // Скрываем результат через 5 секунд
+                    setTimeout(() => {
+                        resultDiv.style.display = 'none';
+                    }, 5000);
+                } else {
+                    // Ошибка при активации
+                    let errorMsg = data.error || 'Неизвестная ошибка';
+                    
+                    if (errorMsg === 'Promo not found') {
+                        errorMsg = 'Промокод не найден';
+                    } else if (errorMsg === 'Already used') {
+                        errorMsg = 'Вы уже активировали этот промокод';
+                    } else if (errorMsg === 'Promo limit reached') {
+                        errorMsg = 'Лимит активаций промокода достигнут';
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="promo-error">
+                            <div class="error-icon">❌</div>
+                            <p class="error-message">${errorMsg}</p>
+                        </div>
+                    `;
+                    
+                    // Скрываем ошибку через 3 секунды
+                    setTimeout(() => {
+                        resultDiv.style.display = 'none';
+                    }, 3000);
+                }
+            } catch (e) {
+                resultDiv.innerHTML = `
+                    <div class="promo-error">
+                        <div class="error-icon">⚠️</div>
+                        <p class="error-message">Ошибка: ${e.message}</p>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    resultDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+    </script>
+    
+    <style>
+        .profile-header {
+            text-align: center;
+            padding: 20px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .avatar-container {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .avatar-large-svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .avatar-large {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .username-text-profile {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 800;
+        }
+        
+        .profile-balance {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 16px;
+            border-radius: 12px;
+            justify-content: center;
+        }
+        
+        .ton-svg-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        
+        .balance-text {
+            font-size: 16px;
+            font-weight: 800;
+            color: white;
+        }
+        
+        /* СЕКЦИЯ АКТИВАЦИИ ПРОМО */
+        .promo-activation-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 16px;
+            border-radius: 15px;
+            margin: 15px 16px 0;
+            color: white;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            opacity: 0.95;
+        }
+        
+        .promo-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .promo-input-field {
+            flex: 1;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: rgba(255, 255, 255, 0.95);
+            color: #222;
+        }
+        
+        .promo-input-field::placeholder {
+            color: #999;
+        }
+        
+        .promo-input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-promo-activate {
+            width: 45px;
+            height: 45px;
+            padding: 0;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        
+        .btn-promo-activate:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .promo-result {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .promo-success, .promo-error {
+            width: 100%;
+            background: white;
+            padding: 15px 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .success-icon, .error-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .success-message, .error-message {
+            margin: 10px 0 0 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .reward-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 60px;
+        }
+        
+        .reward-icon-ton {
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+        }
+        
+        .reward-icon-gift {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        
+        .reward-text {
+            text-align: left;
+        }
+        
+        .reward-amount {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0088cc;
+            margin: 0;
+        }
+        
+        .reward-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #222;
+            margin: 0;
+        }
+        
+        .reward-label {
+            font-size: 12px;
+            color: #666;
+            margin: 4px 0 0 0;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* ИНВЕНТАРЬ */
+        .inventory-section {
+            margin: 15px 16px;
+        }
+        
+        .inventory-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0 0 12px 0;
+            color: #222;
+        }
+        
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .inventory-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .inventory-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        
+        .inventory-name {
+            font-size: 11px;
+            text-align: center;
+            font-weight: 600;
+            color: #222;
+        }
+        
+        .empty-inventory {
+            grid-column: 1 / -1;
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+        
+        .empty-inventory p {
+            margin: 0;
+            font-size: 13px;
+        }
+    </style>
 </body>
-</html>	
+</html>

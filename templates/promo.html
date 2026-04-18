@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Активация промокода</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 20px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .loading {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f0f0f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 { color: #222; margin-bottom: 10px; font-size: 24px; }
+        p { color: #666; margin-bottom: 10px; line-height: 1.5; }
+        .status-success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .status-error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .reward-text {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" style="display: flex; flex-direction: column; align-items: center;">
+            <div class="spinner"></div>
+            <h1>Активация промокода...</h1>
+            <p>Пожалуйста, подождите</p>
+        </div>
+
+        <div id="success" style="display: none;">
+            <h1>🎉 Успешно!</h1>
+            <p>Ваш промокод активирован!</p>
+            <div class="reward-text" id="reward-display"></div>
+            <p id="balance-display"></p>
+            <button onclick="goToGame()">Играть →</button>
+        </div>
+
+        <div id="error" style="display: none;">
+            <h1>❌ Ошибка</h1>
+            <div class="status-error" id="error-message"></div>
+            <button onclick="goToGame()">Вернуться в игру</button>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const promoName = "{{ promo_name }}";
+        let currentUserId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+
+            if (!tgUser) {
+                showError("Пожалуйста, откройте ссылку из Telegram");
+                return;
+            }
+
+            currentUserId = tgUser.id.toString();
+            
+            // Активируем промокод
+            await activatePromo();
+        });
+
+        async function activatePromo() {
+            try {
+                const response = await fetch(`/api/promo/activate/${promoName}/${currentUserId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess(data);
+                } else {
+                    showError(data.error || 'Неизвестная ошибка');
+                }
+            } catch (error) {
+                showError('Ошибка подключения: ' + error.message);
+            }
+        }
+
+        function showSuccess(data) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('success').style.display = 'block';
+            document.getElementById('reward-display').textContent = data.reward || data.message;
+            
+            if (data.new_balance !== undefined) {
+                document.getElementById('balance-display').textContent = 
+                    `💰 Новый баланс: ${data.new_balance.toFixed(2)} TON`;
+            }
+        }
+
+        function showError(errorMessage) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error-message').textContent = errorMessage;
+        }
+
+        function goToGame() {
+            const tg = window.Telegram.WebApp;
+            if (tg.close) {
+                tg.close();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>
