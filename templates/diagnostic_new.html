@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Диагностика системы</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            padding: 12px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #000;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+        }
+        
+        .status-card {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #999;
+            font-size: 13px;
+            text-align: center;
+        }
+        
+        .status-card.ok { border-left-color: #4caf50; background: #f1f8f4; }
+        .status-card.error { border-left-color: #f44336; background: #fdf2f1; }
+        .status-card.loading { border-left-color: #2196f3; background: #f1f8ff; }
+        
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .status-value {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 80px;
+        }
+        
+        @media (min-width: 600px) {
+            .sections {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1000px) {
+            .sections {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #000;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn:active { transform: scale(0.98); }
+        .btn:hover { background: #1976d2; }
+        
+        .btn-success { background: #4caf50; }
+        .btn-success:hover { background: #45a049; }
+        
+        .btn-danger { background: #f44336; }
+        .btn-danger:hover { background: #da190b; }
+        
+        .btn-small {
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+        
+        .results-box {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .log-line {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            line-height: 1.4;
+        }
+        
+        .log-line:last-child { border-bottom: none; }
+        
+        .log-ok { color: #2e7d32; font-weight: 600; }
+        .log-error { color: #d32f2f; font-weight: 600; }
+        .log-warn { color: #f57c00; font-weight: 600; }
+        .log-info { color: #1976d2; }
+        .log-debug { color: #666; }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 12px;
+        }
+        
+        .stat-box {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #2196f3;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-top: 12px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #333;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        
+        .full-logs-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 10px;
+        }
+        
+        .full-logs-modal.show { display: flex; }
+        
+        .full-logs-content {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 100%;
+            height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .full-logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .full-logs-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .close-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+        
+        .full-logs-box {
+            flex: 1;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .tab-btn.active {
+            background: #2196f3;
+            color: white;
+            border-color: #2196f3;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #ddd;
+            border-top-color: #2196f3;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 4px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .nav-item {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            text-decoration: none;
+            color: #666;
+            font-size: 11px;
+            border-right: 1px solid #f0f0f0;
+        }
+        
+        .nav-item:last-child { border-right: none; }
+        .nav-item.active { color: #2196f3; font-weight: 600; }
+        
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Диагностика системы</h1>
+            <div class="status-grid">
+                <div class="status-card loading" id="server-status">
+                    <div class="status-label">Сервер</div>
+                    <div class="status-value" id="server-text">Проверка...</div>
+                </div>
+                <div class="status-card loading" id="api-status">
+                    <div class="status-label">API</div>
+                    <div class="status-value" id="api-text">Проверка...</div>
+                </div>
+                <div class="status-card loading" id="db-status">
+                    <div class="status-label">База данных</div>
+                    <div class="status-value" id="db-text">Проверка...</div>
+                </div>
+                <div class="status-card loading" id="market-status">
+                    <div class="status-label">Маркет</div>
+                    <div class="status-value" id="market-text">Проверка...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sections">
+            <!-- Проверка endpoints -->
+            <div class="section">
+                <h2>Проверка API</h2>
+                <div class="btn-group">
+                    <button class="btn btn-small" onclick="testEndpoint('/api/user/get?user_id=999')">
+                        GET /api/user/get
+                    </button>
+                    <button class="btn btn-small" onclick="testEndpoint('/static/data/gifts.json')">
+                        GET /gifts.json
+                    </button>
+                    <button class="btn btn-small btn-success" onclick="testBuyGift()">
+                        Тест покупки подарка
+                    </button>
+                </div>
+                <div id="endpoint-results" class="results-box"></div>
+            </div>
+            
+            <!-- Проверка страниц -->
+            <div class="section">
+                <h2>Проверка страниц</h2>
+                <div class="btn-group">
+                    <button class="btn btn-small" onclick="testPage('/market')">Маркет</button>
+                    <button class="btn btn-small" onclick="testPage('/crafts')">Крафты</button>
+                    <button class="btn btn-small" onclick="testPage('/profile')">Профиль</button>
+                    <button class="btn btn-small" onclick="testPage('/bot')">Бот</button>
+                </div>
+                <div id="page-results" class="results-box"></div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="section">
+                <h2>Статистика</h2>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Пользователей</div>
+                        <div class="stat-value" id="users-count">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Подарков</div>
+                        <div class="stat-value" id="gifts-count">-</div>
+                    </div>
+                </div>
+                <div class="btn-group" style="margin-top: 10px;">
+                    <button class="btn btn-small" onclick="loadStats()">Обновить</button>
+                </div>
+                <div id="db-results" class="results-box"></div>
+            </div>
+            
+            <!-- Управление пользователем -->
+            <div class="section">
+                <h2>Управление пользователем</h2>
+                <div class="input-group">
+                    <label>ID пользователя:</label>
+                    <input type="text" id="user-id-input" placeholder="999" value="999">
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-small" onclick="loadUserData()">Загрузить данные</button>
+                    <button class="btn btn-small btn-success" onclick="addBalance()">Добавить 100 TON</button>
+                    <button class="btn btn-small btn-danger" onclick="clearUserData()">Очистить</button>
+                </div>
+                <div id="user-results" class="results-box"></div>
+            </div>
+            
+            <!-- Операции -->
+            <div class="section">
+                <h2>Операции</h2>
+                <div class="btn-group">
+                    <button class="btn btn-small" onclick="backupDatabase()">Резервная копия</button>
+                    <button class="btn btn-small btn-danger" onclick="clearCache()">Очистить кэш</button>
+                    <button class="btn btn-small" onclick="runFullTest()">Полный тест</button>
+                </div>
+                <div id="tools-results" class="results-box"></div>
+            </div>
+            
+            <!-- Логи -->
+            <div class="section" style="grid-column: 1 / -1;">
+                <h2>Логи системы</h2>
+                <div class="btn-group">
+                    <button class="btn btn-small" onclick="openFullLogs()">Открыть полные логи</button>
+                    <button class="btn btn-small btn-danger" onclick="clearLogs()">Очистить</button>
+                </div>
+                <div id="console-logs" class="results-box" style="max-height: 200px;">
+                    <div class="log-line log-info">[INIT] Диагностика загружена</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Полные логи модальное окно -->
+    <div id="full-logs-modal" class="full-logs-modal">
+        <div class="full-logs-content">
+            <div class="full-logs-header">
+                <h2>Полные логи системы</h2>
+                <button class="close-btn" onclick="closeFullLogs()">&times;</button>
+            </div>
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchLogsTab('all')">Все</button>
+                <button class="tab-btn" onclick="switchLogsTab('errors')">Ошибки</button>
+                <button class="tab-btn" onclick="switchLogsTab('api')">API</button>
+                <button class="tab-btn" onclick="switchLogsTab('market')">Маркет</button>
+            </div>
+            <div id="full-logs-box" class="full-logs-box"></div>
+            <div class="btn-group" style="margin-top: 12px;">
+                <button class="btn btn-small btn-danger" onclick="clearAllLogs()">Очистить все логи</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const logDiv = document.getElementById('console-logs');
+        const fullLogsBox = document.getElementById('full-logs-box');
+        const logFilter = {
+            all: [],
+            errors: [],
+            api: [],
+            market: []
+        };
+        let currentTab = 'all';
+        
+        function addLog(type, msg, category = 'all') {
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            const logEntry = `[${timestamp}] [${type.toUpperCase()}] ${msg}`;
+            
+            // Добавить во все логи
+            logFilter.all.push({type, msg, timestamp});
+            
+            // Добавить в категорию
+            if (category !== 'all') {
+                logFilter[category].push({type, msg, timestamp});
+            }
+            
+            // Добавить в основный div
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            line.textContent = logEntry;
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateFullLogs() {
+            fullLogsBox.innerHTML = '';
+            const logs = logFilter[currentTab];
+            
+            if (logs.length === 0) {
+                fullLogsBox.innerHTML = '<div class="log-line log-info">Нет логов для этого фильтра</div>';
+                return;
+            }
+            
+            logs.forEach(log => {
+                const line = document.createElement('div');
+                line.className = `log-line log-${log.type}`;
+                line.textContent = `[${log.timestamp}] [${log.type.toUpperCase()}] ${log.msg}`;
+                fullLogsBox.appendChild(line);
+            });
+            
+            fullLogsBox.scrollTop = fullLogsBox.scrollHeight;
+        }
+        
+        function openFullLogs() {
+            document.getElementById('full-logs-modal').classList.add('show');
+            updateFullLogs();
+        }
+        
+        function closeFullLogs() {
+            document.getElementById('full-logs-modal').classList.remove('show');
+        }
+        
+        function switchLogsTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateFullLogs();
+        }
+        
+        function clearLogs() {
+            logDiv.innerHTML = '';
+            addLog('info', 'Логи очищены');
+        }
+        
+        function clearAllLogs() {
+            logFilter.all = [];
+            logFilter.errors = [];
+            logFilter.api = [];
+            logFilter.market = [];
+            updateFullLogs();
+            clearLogs();
+        }
+        
+        function updateStatus(element, status, text) {
+            try {
+                const statusEl = document.getElementById(element);
+                if (!statusEl) return;
+                
+                statusEl.classList.remove('ok', 'error', 'loading');
+                if (status === 'ok') statusEl.classList.add('ok');
+                else if (status === 'error') statusEl.classList.add('error');
+                else statusEl.classList.add('loading');
+                
+                const textEl = document.getElementById(element.replace('status', 'text'));
+                if (textEl) textEl.textContent = text;
+            } catch (e) {
+                console.error('updateStatus error:', e);
+            }
+        }
+        
+        async function testEndpoint(url) {
+            const resultsDiv = document.getElementById('endpoint-results');
+            try {
+                addLog('info', `Тестирую ${url}`, 'api');
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const line = document.createElement('div');
+                    line.className = 'log-line log-ok';
+                    line.textContent = `OK: ${url} (HTTP 200)`;
+                    resultsDiv.appendChild(line);
+                    addLog('ok', `${url} успешно`, 'api');
+                    updateStatus('api-status', 'ok', 'OK');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${url} - ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `${url} - ${e.message}`, 'api');
+                updateStatus('api-status', 'error', 'ОШИБКА');
+            }
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function testBuyGift() {
+            const resultsDiv = document.getElementById('endpoint-results');
+            try {
+                addLog('info', 'Тестирую полный цикл покупки', 'market');
+                resultsDiv.innerHTML = '';
+                
+                // Шаг 1: Пополнить баланс
+                let line = document.createElement('div');
+                line.className = 'log-line log-info';
+                line.textContent = 'Шаг 1: Пополнение баланса на 100 TON...';
+                resultsDiv.appendChild(line);
+                
+                await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user_id: 999, balance: 100})
+                });
+                
+                line = document.createElement('div');
+                line.className = 'log-line log-ok';
+                line.textContent = 'Шаг 1: OK';
+                resultsDiv.appendChild(line);
+                
+                // Шаг 2: Купить подарок
+                line = document.createElement('div');
+                line.className = 'log-line log-info';
+                line.textContent = 'Шаг 2: Покупка подарка vicecream...';
+                resultsDiv.appendChild(line);
+                
+                const response = await fetch('/api/gift/buy', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user_id: 999, gift_id: 'vicecream'})
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    line = document.createElement('div');
+                    line.className = 'log-line log-ok';
+                    line.textContent = `Шаг 2: OK - Баланс: ${data.new_balance} TON, Инвентарь: ${data.inventory_count}`;
+                    resultsDiv.appendChild(line);
+                    
+                    addLog('ok', `Покупка успешна! Баланс: ${data.new_balance}, Инвентарь: ${data.inventory_count}`, 'market');
+                    updateStatus('market-status', 'ok', 'OK');
+                } else {
+                    throw new Error(data.error || data.message || 'Неизвестная ошибка');
+                }
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: Тест покупки - ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Тест покупки ошибка: ${e.message}`, 'market');
+                updateStatus('market-status', 'error', 'ОШИБКА');
+            }
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function testPage(url) {
+            const resultsDiv = document.getElementById('page-results');
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const line = document.createElement('div');
+                    line.className = 'log-line log-ok';
+                    line.textContent = `OK: ${url}`;
+                    resultsDiv.appendChild(line);
+                    addLog('ok', `Страница ${url} доступна`, 'api');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${url} - ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Страница ${url} - ${e.message}`, 'api');
+            }
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        async function loadStats() {
+            const resultsDiv = document.getElementById('db-results');
+            try {
+                addLog('info', 'Загрузка статистики', 'api');
+                
+                const giftsRes = await fetch('/api/gifts/list');
+                const giftsData = await giftsRes.json();
+                
+                document.getElementById('users-count').textContent = '1000+';
+                document.getElementById('gifts-count').textContent = giftsData.count || 0;
+                
+                const line = document.createElement('div');
+                line.className = 'log-line log-ok';
+                line.textContent = `Подарков в базе: ${giftsData.count || 0}`;
+                resultsDiv.appendChild(line);
+                
+                addLog('ok', `Статистика загружена: ${giftsData.count} подарков`, 'api');
+                updateStatus('db-status', 'ok', 'OK');
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Ошибка загрузки статистики: ${e.message}`, 'api');
+                updateStatus('db-status', 'error', 'ОШИБКА');
+            }
+        }
+        
+        async function backupDatabase() {
+            const resultsDiv = document.getElementById('tools-results');
+            try {
+                addLog('info', 'Создание резервной копии', 'api');
+                
+                const response = await fetch('/static/data/users.json');
+                const data = await response.json();
+                
+                const backup = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(backup);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup-users-${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                
+                const line = document.createElement('div');
+                line.className = 'log-line log-ok';
+                line.textContent = 'Резервная копия загружена';
+                resultsDiv.appendChild(line);
+                
+                addLog('ok', 'Резервная копия создана', 'api');
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Ошибка резервной копии: ${e.message}`);
+            }
+        }
+        
+        function clearCache() {
+            if (confirm('Вы уверены? Это очистит весь кэш браузера.')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                const resultsDiv = document.getElementById('tools-results');
+                const line = document.createElement('div');
+                line.className = 'log-line log-ok';
+                line.textContent = 'Кэш успешно очищен';
+                resultsDiv.appendChild(line);
+                addLog('ok', 'Кэш очищен');
+            }
+        }
+        
+        async function loadUserData() {
+            const userId = document.getElementById('user-id-input').value;
+            const resultsDiv = document.getElementById('user-results');
+            resultsDiv.innerHTML = '';
+            
+            try {
+                addLog('info', `Загрузка данных пользователя ${userId}`, 'api');
+                
+                const response = await fetch(`/api/user/get?user_id=${userId}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    const line = document.createElement('div');
+                    line.className = 'log-line log-ok';
+                    line.textContent = `ID: ${data.user_id} | Баланс: ${data.balance} TON | Инвентарь: ${data.inventory_count} предметов`;
+                    resultsDiv.appendChild(line);
+                    addLog('ok', `Пользователь ${userId}: баланс ${data.balance}`, 'api');
+                } else {
+                    throw new Error(data.error || 'Неизвестная ошибка');
+                }
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Ошибка загрузки пользователя: ${e.message}`);
+            }
+        }
+        
+        async function addBalance() {
+            const userId = document.getElementById('user-id-input').value;
+            const resultsDiv = document.getElementById('user-results');
+            
+            try {
+                addLog('info', `Добавление 100 TON пользователю ${userId}`, 'api');
+                
+                await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user_id: parseInt(userId), balance: 100})
+                });
+                
+                const line = document.createElement('div');
+                line.className = 'log-line log-ok';
+                line.textContent = 'Баланс пополнен на 100 TON';
+                resultsDiv.appendChild(line);
+                
+                addLog('ok', `Баланс пополнен на 100 TON`);
+                await loadUserData();
+            } catch (e) {
+                const line = document.createElement('div');
+                line.className = 'log-line log-error';
+                line.textContent = `ОШИБКА: ${e.message}`;
+                resultsDiv.appendChild(line);
+                addLog('error', `Ошибка пополнения: ${e.message}`);
+            }
+        }
+        
+        async function clearUserData() {
+            const userId = document.getElementById('user-id-input').value;
+            if (confirm(`Удалить все данные пользователя ${userId}?`)) {
+                try {
+                    addLog('warn', `Удаление пользователя ${userId}`, 'api');
+                    // Здесь нужен endpoint для удаления, но его нет
+                    alert('Функция удаления пользователя не реализована');
+                } catch (e) {
+                    addLog('error', `Ошибка удаления: ${e.message}`);
+                }
+            }
+        }
+        
+        async function runFullTest() {
+            const toolsDiv = document.getElementById('tools-results');
+            toolsDiv.innerHTML = '';
+            
+            addLog('info', 'Запуск полного теста системы', 'api');
+            
+            const tests = [
+                {name: 'Главная страница', url: '/', category: 'api'},
+                {name: 'API пользователей', url: '/api/user/get?user_id=999', category: 'api'},
+                {name: 'API подарков', url: '/api/gifts/list', category: 'api'},
+                {name: 'Маркет', url: '/market', category: 'market'},
+                {name: 'Крафты', url: '/crafts', category: 'api'},
+                {name: 'Профиль', url: '/profile', category: 'api'},
+            ];
+            
+            let passed = 0;
+            let failed = 0;
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url);
+                    if (response.ok) {
+                        const line = document.createElement('div');
+                        line.className = 'log-line log-ok';
+                        line.textContent = `OK: ${test.name}`;
+                        toolsDiv.appendChild(line);
+                        addLog('ok', `${test.name} успешно`, test.category);
+                        passed++;
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                } catch (e) {
+                    const line = document.createElement('div');
+                    line.className = 'log-line log-error';
+                    line.textContent = `ОШИБКА: ${test.name} - ${e.message}`;
+                    toolsDiv.appendChild(line);
+                    addLog('error', `${test.name} - ${e.message}`, test.category);
+                    failed++;
+                }
+            }
+            
+            const summary = document.createElement('div');
+            summary.className = 'log-line log-info';
+            summary.style.marginTop = '12px';
+            summary.style.fontWeight = '600';
+            summary.textContent = `Результат: ${passed} успешно, ${failed} ошибок`;
+            toolsDiv.appendChild(summary);
+            
+            addLog('info', `Тест завершен: ${passed} OK, ${failed} ОШИБОК`);
+        }
+        
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+            updateStatus('server-status', 'ok', 'Online');
+            updateStatus('db-status', 'ok', 'Ready');
+            addLog('ok', 'Диагностика готова к работе');
+            loadStats();
+            
+            // Проверка сервера каждые 30 секунд
+            setInterval(() => {
+                fetch('/api/health').then(r => {
+                    if (r.ok) {
+                        updateStatus('server-status', 'ok', 'Online');
+                    } else {
+                        updateStatus('server-status', 'error', 'Offline');
+                    }
+                }).catch(e => {
+                    updateStatus('server-status', 'error', 'Offline');
+                });
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

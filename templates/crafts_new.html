@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Крафты</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='tonconnect.js') }}"></script>
+    <style>
+        .top-header {
+            position: fixed; top: 0; left: 0; right: 0; height: 70px;
+            background: white; border-bottom: 1px solid #e0e0e0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 16px; z-index: 60;
+        }
+        
+        .header-user-info {
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .header-avatar-container {
+            width: 32px; height: 32px;
+        }
+        
+        .header-avatar {
+            width: 100%; height: 100%;
+        }
+        
+        .header-username {
+            font-size: 14px; font-weight: 500; color: #333;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        .app-content {
+            padding-top: 70px; padding-bottom: 80px;
+        }
+        
+        .craft-slots-container {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+            padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 15px;
+        }
+        
+        .craft-slot {
+            aspect-ratio: 1; border: 2px dashed #ccc; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            background: white; cursor: pointer; overflow: hidden;
+        }
+        
+        .craft-slot img {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        
+        .craft-info {
+            text-align: center; margin-bottom: 15px; font-size: 14px;
+            font-weight: 600; color: #333; padding: 12px;
+            background: #f0f0f0; border-radius: 8px;
+        }
+        
+        .btn-craft {
+            width: 100%; padding: 14px; background: #0088cc; color: white;
+            border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: all 0.3s; margin: 15px 0;
+        }
+        
+        .btn-craft:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+        
+        .btn-craft:not(:disabled):active {
+            transform: scale(0.98);
+        }
+        
+        .inventory-item {
+            border: 1px solid #e0e0e0; border-radius: 10px;
+            padding: 8px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: white;
+        }
+        
+        .inventory-item:active {
+            transform: scale(0.95);
+        }
+        
+        .inventory-item img {
+            width: 100%; height: 80px; object-fit: contain; margin-bottom: 6px;
+        }
+        
+        .inventory-item-name {
+            font-size: 12px; font-weight: 600; color: #333; margin-bottom: 4px; line-height: 1.2;
+        }
+        
+        .inventory-item-price {
+            font-size: 12px; color: #0088cc; font-weight: bold;
+        }
+        
+        .win-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;
+            z-index: 200; padding: 20px;
+        }
+        
+        .win-overlay.active {
+            display: flex;
+        }
+        
+        .win-card {
+            background: white; border-radius: 20px; padding: 30px;
+            max-width: 350px; text-align: center; animation: slideUp 0.4s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .win-title {
+            font-size: 24px; font-weight: 700; color: #0088cc;
+            margin: 0 0 20px 0;
+        }
+        
+        .win-image {
+            width: 120px; height: 120px; object-fit: contain;
+            margin: 0 auto 15px; display: block;
+        }
+        
+        .win-gift-name {
+            font-size: 16px; font-weight: 700; color: #222; margin: 0 0 15px 0;
+        }
+        
+        .win-gift-price {
+            font-size: 18px; color: #0088cc; font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .win-buttons {
+            display: flex; gap: 10px;
+        }
+        
+        .win-btn {
+            flex: 1; padding: 12px; border: none; border-radius: 10px;
+            font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        
+        .win-btn.sell {
+            background: #0088cc; color: white;
+        }
+        
+        .win-btn.continue {
+            background: #f0f0f0; color: #333;
+        }
+        
+        .win-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .empty-inventory {
+            text-align: center; padding: 40px 20px; grid-column: 1/-1;
+        }
+        
+        .empty-inventory img {
+            width: 80px; height: 80px; margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP HEADER -->
+    <div class="top-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="header-user-info" style="display: flex; align-items: center; gap: 8px;">
+            <div class="header-avatar-container" style="width: 32px; height: 32px;">
+                <svg id="header-avatar-svg" style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <img id="header-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
+            </div>
+            <span id="header-username" style="font-size: 14px; font-weight: 500; color: #333;">Пользователь</span>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+            <div style="text-align: right;">
+                <div style="font-size: 12px; color: #999;">Баланс</div>
+                <div style="font-size: 18px; font-weight: bold; color: #0088cc;" id="header-balance">0 TON</div>
+            </div>
+            <button onclick="connectWallet()" style="background: #0088cc; color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; font-weight: bold;">+</button>
+        </div>
+    </div>
+    
+    <div class="app-content">
+        <main class="crafts-container" style="margin-top: 0; margin-bottom: 0; padding: 15px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #222;">Крафтинг</h2>
+                <p style="color: #999; margin: 5px 0 0 0;">Комбинируйте предметы для новых подарков</p>
+            </div>
+
+            <!-- Craft Slots -->
+            <div class="craft-slots-container" id="craft-slots-container">
+                <div class="craft-slot" id="slot-1"></div>
+                <div class="craft-slot" id="slot-2"></div>
+                <div class="craft-slot" id="slot-3"></div>
+                <div class="craft-slot" id="slot-4"></div>
+                <div class="craft-slot" id="slot-5"></div>
+                <div class="craft-slot" id="slot-6"></div>
+                <div class="craft-slot" id="slot-7"></div>
+                <div class="craft-slot" id="slot-8"></div>
+                <div class="craft-slot" id="slot-9"></div>
+                <div class="craft-slot" id="slot-10"></div>
+            </div>
+
+            <div class="craft-info" id="craft-info">Выбрано: 0 предметов</div>
+            
+            <button class="btn-craft" id="craft-btn" disabled onclick="doCraft()">КРАФТИТЬ</button>
+
+            <h3 style="margin: 25px 0 15px 0; font-weight: 700; color: #222;">Ваш инвентарь</h3>
+            <div id="craft-inventory" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
+        </main>
+
+        <!-- Win Screen -->
+        <div class="win-overlay" id="win-overlay">
+            <div class="win-card">
+                <h2 class="win-title">Поздравляем!</h2>
+                <img id="win-image" class="win-image" src="">
+                <p class="win-gift-name" id="win-gift-name"></p>
+                <p class="win-gift-price" id="win-gift-price"></p>
+                <div class="win-buttons">
+                    <button class="win-btn sell" onclick="sellCraftedGift()">Продать</button>
+                    <button class="win-btn continue" onclick="closeCraftWin()">Продолжить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="{{ url_for('index') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <span>Главная</span>
+        </a>
+        <a href="{{ url_for('market') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+            <span>Маркет</span>
+        </a>
+        <a href="{{ url_for('crafts') }}" class="nav-item active">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            <span>Крафты</span>
+        </a>
+        <a href="{{ url_for('profile') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Профиль</span>
+        </a>
+    </nav>
+
+    <script>
+        const GIFT_GIF_URL = '{{ url_for("static", filename="gifs/gift.gif") }}';
+        
+        let currentUserId = null;
+        let selectedItems = [];
+        let allGifts = [];
+        let currentCraftedGift = null;
+
+        async function connectWallet() {
+            const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl: 'https://rpsgames.pythonanywhere.com/tonconnect-manifest.json',
+                buttonRootId: 'tc-button'
+            });
+            
+            try {
+                const wallet = await tonConnectUI.connectWallet();
+                if (wallet) {
+                    console.log('[DEBUG] Wallet connected:', wallet);
+                    if (typeof showToast === 'function') showToast('Wallet connected', 'success'); else alert('Wallet connected');
+                }
+            } catch (error) {
+                console.error('[ERROR] Connection error:', error);
+            }
+        }
+        
+        async function loadBalance() {
+            if (!currentUserId) return;
+            try {
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    document.getElementById('header-balance').textContent = (data.balance || 0).toFixed(2) + ' TON';
+                }
+            } catch (e) {
+                console.error('Ошибка:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tg = window.Telegram.WebApp;
+            const tgUser = tg.initDataUnsafe?.user;
+            
+            if (tgUser) {
+                currentUserId = tgUser.id;
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                }
+            }
+            
+            loadGifts();
+            loadInventory();
+            loadBalance();
+            setInterval(loadBalance, 5000);
+        });
+
+        async function loadGifts() {
+            try {
+                const response = await fetch('/static/data/gifts.json');
+                allGifts = await response.json();
+            } catch (e) {
+                console.error('Error loading gifts:', e);
+            }
+        }
+
+        async function loadInventory() {
+            try {
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok' && data.inventory) {
+                    const container = document.getElementById('craft-inventory');
+                    container.innerHTML = '';
+                    
+                    if (data.inventory.length === 0) {
+                        container.innerHTML = `<div class="empty-inventory" style="grid-column: 1/-1;"><img src="${GIFT_GIF_URL}"><p style="color: #999; margin: 0;">Инвентарь пуст</p></div>`;
+                        return;
+                    }
+                    
+                    data.inventory.forEach((giftItem, index) => {
+                        const giftId = typeof giftItem === 'string' ? giftItem : giftItem.id;
+                        const gift = allGifts.find(g => g.id === giftId);
+                        if (gift) {
+                            const div = document.createElement('div');
+                            div.className = 'inventory-item';
+                            div.setAttribute('data-gift-id', giftId);
+                            
+                            let imgSrc = gift.image;
+                            if (!imgSrc.startsWith('/')) {
+                                imgSrc = '/static/img/gifts/' + imgSrc;
+                            }
+                            
+                            div.innerHTML = `
+                                <img src="${imgSrc}" alt="${gift.name}" onerror="this.src='/static/img/default.png'">
+                                <div class="inventory-item-name">${gift.name}</div>
+                                <div class="inventory-item-price">${gift.price} TON</div>
+                            `;
+                            div.onclick = () => selectItem(gift, index);
+                            container.appendChild(div);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading inventory:', e);
+            }
+        }
+
+        function selectItem(gift, inventoryIndex) {
+            if (selectedItems.length >= 10) return;
+            // Prevent selecting the same inventory instance twice
+            if (selectedItems.some(s => s.inventoryIndex === inventoryIndex)) return;
+            selectedItems.push({ gift, inventoryIndex });
+            updateSlots();
+        }
+
+        function updateSlots() {
+            selectedItems.forEach((item, index) => {
+                const slot = document.getElementById(`slot-${index + 1}`);
+                let imgSrc = item.gift.image;
+                if (!imgSrc.startsWith('/')) {
+                    imgSrc = '/static/img/gifts/' + imgSrc;
+                }
+                slot.innerHTML = `<img src="${imgSrc}" alt="${item.gift.name}" style="cursor: pointer; border-radius: 6px;" onclick="removeItem(${index})" onerror="this.src='/static/img/default.png'">`;
+            });
+
+            for (let i = selectedItems.length; i < 10; i++) {
+                document.getElementById(`slot-${i + 1}`).innerHTML = '';
+            }
+
+            // Gray out and disable only the inventory items that were selected
+            const inventoryItems = document.querySelectorAll('.inventory-item');
+            inventoryItems.forEach((el, idx) => {
+                const isSelected = selectedItems.some(s => s.inventoryIndex === idx);
+                if (isSelected) {
+                    el.style.opacity = '0.4';
+                    el.style.pointerEvents = 'none';
+                } else {
+                    el.style.opacity = '1';
+                    el.style.pointerEvents = 'auto';
+                }
+            });
+            
+            const count = selectedItems.length;
+            const btn = document.getElementById('craft-btn');
+            
+            if (count >= 3) {
+                const totalPrice = selectedItems.reduce((sum, item) => sum + item.gift.price, 0);
+                document.getElementById('craft-info').textContent = `Выбрано: ${count} предметов | Сумма: ${totalPrice.toFixed(2)} TON`;
+                btn.textContent = `КРАФТИТЬ (${totalPrice.toFixed(2)} TON)`;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            } else {
+                document.getElementById('craft-info').textContent = `Выбрано: ${count} предметов (минимум 3)`;
+                btn.textContent = 'КРАФТИТЬ';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+            }
+        }
+
+        function removeItem(index) {
+            selectedItems.splice(index, 1);
+            updateSlots();
+        }
+
+        async function doCraft() {
+            if (selectedItems.length < 3) {
+                if (typeof showToast === 'function') showToast('Select at least 3 items', 'warning'); else alert('Select at least 3 items');
+                return;
+            }
+            
+            const btn = document.getElementById('craft-btn');
+            btn.disabled = true;
+            btn.textContent = 'Крафтим...';
+            
+            const itemIds = selectedItems.map(item => item.gift.id);
+            
+            try {
+                const response = await fetch(`/api/craft?user_id=${currentUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: itemIds })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    currentCraftedGift = data.result_gift;
+                    
+                    const totalPrice = selectedItems.reduce((sum, item) => sum + item.gift.price, 0);
+                    const minReward = Math.round(totalPrice * 0.2);
+                    const maxReward = Math.round(totalPrice * 4);
+                    const reward = Math.round(minReward + Math.random() * (maxReward - minReward));
+                    
+                    currentCraftedGift.reward = reward;
+                    
+                    showWinScreen();
+                    selectedItems = [];
+                    updateSlots();
+                    await loadInventory();
+                    await loadBalance();
+                } else {
+                    if (typeof showToast === 'function') showToast('Error: ' + (data.error || 'Unknown error'), 'error'); else alert('Error: ' + (data.error || 'Unknown error'));
+                }
+                
+                btn.disabled = false;
+                btn.textContent = 'КРАФТИТЬ';
+            } catch (e) {
+                console.error('Craft error:', e);
+                if (typeof showToast === 'function') showToast('Crafting error', 'error'); else alert('Crafting error');
+                btn.disabled = false;
+                btn.textContent = 'КРАФТИТЬ';
+            }
+        }
+
+        function showWinScreen() {
+            if (!currentCraftedGift) return;
+            
+            let imgSrc = currentCraftedGift.image;
+            if (!imgSrc.startsWith('/')) {
+                imgSrc = '/static/img/gifts/' + imgSrc;
+            }
+            
+            document.getElementById('win-image').src = imgSrc;
+            document.getElementById('win-gift-name').textContent = currentCraftedGift.name;
+            document.getElementById('win-gift-price').textContent = currentCraftedGift.reward + ' TON';
+            document.getElementById('win-overlay').classList.add('active');
+        }
+
+        function closeCraftWin() {
+            document.getElementById('win-overlay').classList.remove('active');
+            currentCraftedGift = null;
+        }
+
+        async function sellCraftedGift() {
+            if (!currentCraftedGift) return;
+            
+            try {
+                const response = await fetch('/api/craft/sell', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        reward: currentCraftedGift.reward
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    // compute icon for crafted gift
+                    let iconSrc = '/static/img/default.png';
+                    try { if (currentCraftedGift && currentCraftedGift.image) iconSrc = currentCraftedGift.image.startsWith('/') ? currentCraftedGift.image : '/static/img/gifts/' + currentCraftedGift.image; } catch (e) { iconSrc = '/static/img/default.png'; }
+
+                    if (typeof showToast === 'function') showToast('Gift sold! +' + currentCraftedGift.reward + ' TON', 'success', iconSrc); else alert('Gift sold! +' + currentCraftedGift.reward + ' TON');
+                    closeCraftWin();
+                    await loadBalance();
+                } else {
+                    if (typeof showToast === 'function') showToast('Error selling gift', 'error'); else alert('Error selling gift');
+                }
+            } catch (e) {
+                console.error('Sell error:', e);
+                if (typeof showToast === 'function') showToast('Error selling gift', 'error'); else alert('Error selling gift');
+            }
+        }
+    </script>
+</body>
+</html>

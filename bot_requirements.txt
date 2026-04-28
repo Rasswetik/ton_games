@@ -1,0 +1,4 @@
+# RPS Bot Standalone - зависимости
+python-telegram-bot==20.1
+aiohttp==3.9.1
+requests==2.31.0

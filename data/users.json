@@ -54,5 +54,108 @@
     "tg_id": null,
     "created_at": "2026-04-18T16:49:43.814673",
     "history": []
+  },
+  "guest_br2044gor": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T20:14:58.654727",
+    "history": []
+  },
+  "guest_f7y2qws8r": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T20:16:06.060270",
+    "history": []
+  },
+  "guest_mbee637va": {
+    "balance": 0,
+    "inventory": [],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-18T20:16:06.505549",
+    "history": []
+  },
+  "123456789": {
+    "balance": 97.61,
+    "inventory": [
+      {
+        "id": "vicecream",
+        "name": "Vice Cream",
+        "timestamp": "2026-04-20T20:10:21.204292"
+      }
+    ],
+    "is_new": true,
+    "created_at": "2026-04-20T08:24:47.974362",
+    "history": [
+      {
+        "action": "gift_purchased",
+        "gift_id": "vicecream",
+        "gift_name": "Vice Cream",
+        "price": 2.39,
+        "timestamp": "2026-04-20T20:10:21.204501"
+      }
+    ]
+  },
+  "999": {
+    "balance": 97.61,
+    "inventory": [
+      {
+        "id": "vicecream",
+        "name": "Vice Cream",
+        "timestamp": "2026-04-20T20:12:42.794426"
+      }
+    ],
+    "is_new": true,
+    "tg_id": null,
+    "created_at": "2026-04-20T20:12:42.773952",
+    "history": [
+      {
+        "action": "gift_purchased",
+        "gift_id": "vicecream",
+        "gift_name": "Vice Cream",
+        "price": 2.39,
+        "timestamp": "2026-04-20T20:12:42.794581"
+      }
+    ]
+  },
+  "123": {
+    "balance": 131,
+    "inventory": [
+      "electricskull"
+    ],
+    "is_new": true,
+    "created_at": "2026-04-20T20:38:40.856517",
+    "history": [
+      {
+        "action": "gift_purchased",
+        "gift_id": "instantramen",
+        "gift_name": "Instant Ramen",
+        "price": 2.91,
+        "timestamp": "2026-04-22T08:35:02.268554"
+      },
+      {
+        "action": "craft_completed",
+        "input_items": 5,
+        "result_gift": "instantramen",
+        "timestamp": "2026-04-22T08:35:10.554078"
+      },
+      {
+        "action": "craft_completed",
+        "input_items": 10,
+        "result_gift": "freshsocks",
+        "timestamp": "2026-04-22T08:35:22.670029"
+      },
+      {
+        "action": "craft_completed",
+        "input_items": 3,
+        "result_gift": "candycane",
+        "timestamp": "2026-04-22T19:04:49.809769"
+      }
+    ],
+    "referral_code": "M7R8IA"
   }
 }

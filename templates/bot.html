@@ -1,76 +1,590 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="/style.css">
+    <title>Game - Rock, Scissors, Paper</title>
+    <script>
+        try {
+            const raw = localStorage.getItem('rps_settings');
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        } catch (e) { }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="{{ url_for('static', filename='vendor/tonconnect-ui.min.js') }}"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+        
+        .top-header {
+            position: fixed; top: 0; left: 0; right: 0; height: 70px;
+            background: var(--card); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 16px; z-index: 60;
+        }
+
+        .header-user-info {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .header-avatar-container { width: 32px; height: 32px; }
+        .header-avatar { width: 100%; height: 100%; border-radius: 50%; }
+        .header-username { font-size: 14px; font-weight: 500; color: var(--text); }
+        
+        .bet-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100; padding: 20px;
+        }
+        
+        .bet-overlay.hidden {
+            display: none !important;
+        }
+        
+        .bet-box {
+            background: var(--card);
+            border-radius: 20px; padding: 30px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+            text-align: center; border: 1px solid var(--border);
+        }
+        
+        .bet-box h3 {
+            margin: 0 0 10px 0; font-size: 24px; color: var(--primary); font-weight: 700;
+        }
+        
+        .bet-box p {
+            color: var(--text-light); margin-bottom: 15px; font-size: 13px;
+        }
+        
+        .bet-box input {
+            width: 100%; padding: 12px 16px; font-size: 16px;
+            border: 1px solid var(--border); border-radius: 10px;
+            margin-bottom: 15px; outline: none; transition: all 0.2s;
+            background: var(--card);
+            color: var(--text);
+        }
+        
+        .bet-box input::placeholder { color: var(--text-light); }
+        
+        .bet-box input:focus {
+            border-color: #0088cc; box-shadow: 0 0 12px rgba(0, 136, 204, 0.3);
+            background: var(--bg);
+        }
+        
+        .bet-box button {
+            width: 100%; padding: 14px; background: #0088cc;
+            color: white; border: none; border-radius: 10px; font-size: 16px;
+            font-weight: 700; cursor: pointer; transition: all 0.3s;
+        }
+        
+        .bet-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.3);
+        }
+        
+        .bet-box button:active { transform: scale(0.98); }
+        
+        #game-screen {
+            display: none; flex-direction: column; padding-top: 70px; padding-bottom: 180px;
+            min-height: 100vh; background: white;
+        }
+        
+        .score-board {
+            font-size: 20px; font-weight: 700;
+            color: #0088cc;
+        }
+        
+        .arena {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 40px 20px 0px 20px; min-height: 300px; gap: 20px;
+        }
+        
+        .hand-container {
+            width: 120px; height: 120px; display: flex;
+            align-items: center; justify-content: center;
+        }
+        
+        .hand {
+            width: 100px; height: 100px; object-fit: contain;
+            animation-duration: 0.5s; transform: scaleX(-1);
+        }
+        
+        .slide-in-top {
+            animation: slideInTop 0.6s ease-out;
+        }
+        
+        .slide-in-bottom {
+            animation: slideInBottom 0.6s ease-out;
+        }
+        
+        .shaking-v {
+            animation: shakingVertical 0.4s infinite;
+        }
+        
+        @keyframes slideInTop {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slideInBottom {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes shakingVertical {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-10px); }
+            75% { transform: translateY(10px); }
+        }
+        
+        .game-status {
+            font-size: 18px; font-weight: 700; text-align: center;
+            padding: 15px; min-height: 30px;
+            border-radius: 10px; margin: 10px 0;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            color: #666;
+        }
+        
+        .game-status.win {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        
+        .game-status.lose {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        
+        .game-status.draw {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1565c0;
+        }
+        
+        .controls {
+            position: fixed; bottom: 80px; left: 0; right: 0;
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+            padding: 15px; background: white;
+            border-top: 1px solid #e0e0e0;
+            opacity: 0.5; pointer-events: none; transition: all 0.3s;
+            z-index: 50;
+        }
+        
+        .controls.active {
+            opacity: 1; pointer-events: auto;
+        }
+        
+        .choice-btn {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; padding: 12px 16px;
+            background: #f5f5f5;
+            border: 2px solid #ddd; border-radius: 12px;
+            cursor: pointer; transition: all 0.3s; font-size: 12px;
+            font-weight: 600; color: #333; min-width: 80px;
+        }
+        
+        .choice-btn:hover {
+            background: white;
+            border-color: #0088cc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 136, 204, 0.2);
+        }
+        
+        .choice-btn:active {
+            transform: scale(0.95);
+            background: #f0f0f0;
+        }
+        
+        .choice-btn img {
+            width: 50px; height: 50px; object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
-        <div id="wallet-lock-screen" class="bet-overlay" style="display: flex;">
-            <div class="bet-box">
-                <div id="lock-icon" style="font-size: 50px; margin-bottom: 20px;">💎</div>
-                <h3 id="lock-title">Требуется кошелек</h3>
-                <p id="lock-text" style="color: #666; margin-bottom: 20px; font-size: 14px;">Для игры необходимо подключить TON кошелек.</p>
-                <div id="ton-connect-bot" style="display: flex; justify-content: center;"></div>
+        <!-- TOP HEADER -->
+        <div class="top-header">
+            <div class="header-user-info">
+                <div style="width: 32px; height: 32px;">
+                    <svg id="header-avatar-svg" style="width: 100%; height: 100%;" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <img id="header-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
+                </div>
+                <span id="header-username" class="header-username">User</span>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--text-light);" data-i18n="balance_label">Balance</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="header-balance">0.0 TON</div>
+                </div>
+                <button onclick="connectWallet()" style="background: var(--primary); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; font-weight: bold;">+</button>
             </div>
         </div>
-        <div id="bet-screen" class="bet-overlay" style="display: none;"><div class="bet-box"><h3>Укажите ставку</h3><input type="number" id="bet-input" placeholder="0.1" step="0.1"><button onclick="handleStart()">Играть и оплатить</button></div></div>
-        <div class="game-header"><a href="/index.html" class="back-btn">✕</a><div class="score-board" id="score">0 : 0</div></div>
-        <div class="arena">
-            <div class="hand-container top-hand" id="bot-container"><img src="/img/camen.png" id="bot-hand" class="hand"></div>
-            <div id="game-status" class="game-status"></div>
-            <div class="hand-container bottom-hand" id="player-container"><img src="/img/camen.png" id="player-hand" class="hand"></div>
+
+        <!-- BET INPUT SCREEN -->
+        <div id="bet-screen" class="bet-overlay">
+                <div class="bet-box">
+                <h3 data-i18n="bet_title">Enter Bet</h3>
+                <p data-i18n="bet_desc">Enter amount in TON</p>
+                <input type="number" id="bet-input" placeholder="0.1" step="0.1" min="0.1" inputmode="decimal">
+                <button onclick="handleStart()" data-i18n="continue">Play</button>
+            </div>
         </div>
-        <div class="controls" id="game-controls" style="opacity: 0; pointer-events: none;">
-            <button class="choice-btn" onclick="play('camen')"><img src="/img/camen.png"><span>Камень</span></button>
-            <button class="choice-btn" onclick="play('nojnici')"><img src="/img/nojnici.png"><span>Ножницы</span></button>
-            <button class="choice-btn" onclick="play('paper')"><img src="/img/paper.png"><span>Бумага</span></button>
+
+        <!-- GAME SCREEN -->
+        <div id="game-screen">
+            <div class="arena">
+                <div class="hand-container" id="bot-container">
+                    <img src="/static/img/camen.png" id="bot-hand" class="hand" alt="Bot">
+                </div>
+                <div id="game-status" class="game-status"></div>
+                <div style="position: fixed; top: 75px; right: 16px; z-index: 50;">
+                    <div class="score-board" id="score">0 : 0</div>
+                </div>
+                <div class="hand-container" id="player-container">
+                    <img src="/static/img/camen.png" id="player-hand" class="hand" alt="You">
+                </div>
+            </div>
+
+            <div class="controls" id="game-controls">
+                <button class="choice-btn" onclick="play('rock')">
+                    <img src="/static/img/camen.png" alt="Rock">
+                    <span>Rock</span>
+                </button>
+                <button class="choice-btn" onclick="play('scissors')">
+                    <img src="/static/img/nojnici.png" alt="Scissors">
+                    <span>Scissors</span>
+                </button>
+                <button class="choice-btn" onclick="play('paper')">
+                    <img src="/static/img/paper.png" alt="Paper">
+                    <span>Paper</span>
+                </button>
+            </div>
         </div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="bottom-nav">
+            <a href="{{ url_for('index') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            </a>
+            <a href="{{ url_for('market') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+            </a>
+            <a href="{{ url_for('crafts') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </a>
+            <a href="{{ url_for('profile') }}" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </a>
+            <a href="/inventory" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="8" cy="14" r="1.5"></circle><circle cx="16" cy="14" r="1.5"></circle></svg>
+            </a>
+        </nav>
     </div>
+
     <script>
-        const tg = window.Telegram.WebApp; let ps = 0; let bs = 0;
-        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: window.location.origin + '/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect-bot'
-        });
-        tonConnectUI.onStatusChange(wallet => {
-            if (wallet) { document.getElementById('wallet-lock-screen').style.display = 'none'; document.getElementById('bet-screen').style.display = 'flex'; }
-            else { document.getElementById('wallet-lock-screen').style.display = 'flex'; document.getElementById('bet-screen').style.display = 'none'; }
-        });
-        async function handleStart() {
-            const betAmount = document.getElementById('bet-input').value; if (!betAmount || betAmount <= 0) return alert("Введите сумму");
+        function initTelegram() {
+            if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
+                console.warn('[WARN] Telegram WebApp not available');
+                return null;
+            }
+            
+            tg = window.Telegram.WebApp;
             try {
-                const transaction = { validUntil: Math.floor(Date.now() / 1000) + 60, messages: [{ address: "UQDw7-rC3VhNeN5VUjV_Kz5TVBJ5pX4EEI_OOSdU8J0oQkOh", amount: (parseFloat(betAmount) * 1000000000).toString() }] };
-                const result = await tonConnectUI.sendTransaction(transaction);
-                if (result) startEntrance();
-            } catch (e) { alert("Ошибка оплаты"); }
+                tg.expand();
+                tg.ready();
+                console.log('[OK] Telegram initialized');
+                return tg;
+            } catch (e) {
+                console.error('[ERROR] Telegram init error:', e);
+                return null;
+            }
         }
-        function startEntrance() {
-            document.getElementById('bet-screen').style.display = 'none';
+
+        let playerScore = 0;
+        let botScore = 0;
+        let currentBet = 0;
+        let gameInProgress = false;
+        let currentUserId = null;
+        let currentBalance = 0;
+
+        async function connectWallet() {
+            // Prefer global helper from static/app.js when available
+            if (typeof window.connectWallet === 'function') {
+                try {
+                    await window.initTONConnect(true);
+                } catch (e) {
+                    // initTONConnect may fail silently; proceed to call connectWallet
+                }
+                return window.connectWallet();
+            }
+
+            // Fallback to local behavior (older pages)
+            try {
+                if (!tonConnectUI && typeof TonConnectUI !== 'undefined') {
+                    tonConnectUI = new TonConnectUI({ manifestUrl: window.location.origin + '/tonconnect-manifest.json' });
+                }
+
+                if (!tonConnectUI) {
+                    showToast('TON Connect not available', 'error');
+                    return;
+                }
+
+                if (!tonConnectUI.wallet) {
+                    await tonConnectUI.connectWallet();
+                }
+
+                if (!tonConnectUI.wallet) {
+                    showToast('Wallet not connected', 'warning');
+                    return;
+                }
+
+                // Ask for amount
+                let tonAmount = 1;
+                if (typeof showConfirm === 'function') {
+                    try {
+                        const res = await showConfirm('Enter TON amount to deposit', { input: true, placeholder: '1' });
+                        if (!res || !res.input) { showToast('Invalid amount', 'error'); return; }
+                        tonAmount = parseFloat(res.input);
+                    } catch (err) { showToast('Cancelled', 'info'); return; }
+                } else {
+                    const amount = prompt('Enter TON amount to deposit:', '1');
+                    if (!amount || isNaN(parseFloat(amount))) { showToast('Invalid amount', 'error'); return; }
+                    tonAmount = parseFloat(amount);
+                }
+
+                const nanotonAmount = Math.floor(tonAmount * 1e9);
+                const transaction = { validUntil: Math.floor(Date.now() / 1000) + 300, messages: [{ address: 'UQDw7-rC3VhNeN5VUjV_Kz5TVBJ5pX4EEI_OOSdU8J0oQkOh', amount: nanotonAmount.toString() }] };
+                const result = await tonConnectUI.sendTransaction(transaction);
+                showToast('Sent ' + tonAmount + ' TON', 'success');
+                await loadBalance();
+            } catch (error) {
+                console.error('[ERROR]:', error);
+                showToast(error.message || 'Error', 'error');
+            }
+        }
+        
+        async function loadBalance() {
+            if (!currentUserId) return;
+            try {
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    currentBalance = data.balance || 0;
+                    document.getElementById('header-balance').textContent = currentBalance.toFixed(2) + ' TON';
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTelegram();
+            const tgUser = tg?.initDataUnsafe?.user;
+            
+            if (tgUser && tgUser.id) {
+                currentUserId = tgUser.id;
+                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+                document.getElementById('header-username').textContent = userName;
+                
+                if (tgUser.photo_url) {
+                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
+                    document.getElementById('header-avatar-img').style.display = 'block';
+                    document.getElementById('header-avatar-svg').style.display = 'none';
+                }
+            } else {
+                currentUserId = 123;
+                document.getElementById('header-username').textContent = 'Test User';
+            }
+            
+            await loadBalance();
+            setInterval(loadBalance, 5000);
+        });
+
+        async function handleStart() {
+            const betAmount = document.getElementById('bet-input').value;
+            
+            if (!betAmount || parseFloat(betAmount) <= 0) {
+                if (typeof showToast === 'function') showToast('Enter a valid bet amount', 'warning'); else alert('Enter valid bet amount');
+                return;
+            }
+
+            currentBet = parseFloat(betAmount);
+
+            if (currentBalance < currentBet) {
+                if (typeof showToast === 'function') showToast('Insufficient balance! Your balance: ' + currentBalance.toFixed(2) + ' TON', 'warning'); else alert('Insufficient balance!\nYour balance: ' + currentBalance.toFixed(2) + ' TON');
+                return;
+            }
+
+            startGame();
+        }
+
+        function startGame() {
+            // Hide bet screen and show game screen
+            document.getElementById('bet-screen').classList.add('hidden');
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            playerScore = 0;
+            botScore = 0;
+            updateScore();
+
             document.getElementById('bot-container').classList.add('slide-in-top');
             document.getElementById('player-container').classList.add('slide-in-bottom');
-            setTimeout(() => { document.getElementById('game-status').textContent = "Ваш выбор?"; document.getElementById('game-controls').style.opacity = '1'; document.getElementById('game-controls').style.pointerEvents = 'auto'; }, 1000);
-        }
-        function play(p) {
-            const hands = ['camen', 'nojnici', 'paper']; const b = hands[Math.floor(Math.random() * 3)];
-            const ph = document.getElementById('player-hand'); const bh = document.getElementById('bot-hand'); const st = document.getElementById('game-status');
-            document.getElementById('game-controls').style.pointerEvents = 'none';
-            ph.src = bh.src = "/img/camen.png"; ph.classList.add('shaking-v'); bh.classList.add('shaking-v');
-            st.textContent = "Раз... Два... Три!";
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+
             setTimeout(() => {
-                ph.classList.remove('shaking-v'); bh.classList.remove('shaking-v');
-                ph.src = `/img/${p}.png`; bh.src = `/img/${b}.png`;
-                if (p === b) st.textContent = "Ничья";
-                else if ((p==='camen'&&b==='nojnici')||(p==='nojnici'&&b==='paper')||(p==='paper'&&b==='camen')) { st.textContent = "Вы выиграли!"; ps++; }
-                else { st.textContent = "Бот выиграл"; bs++; }
-                document.getElementById('score').textContent = `${ps} : ${bs}`;
-                setTimeout(() => { st.textContent = "Ещё раз?"; document.getElementById('game-controls').style.pointerEvents = 'auto'; }, 1500);
+                document.getElementById('game-status').textContent = 'Ready? Choose!';
+                document.getElementById('game-controls').classList.add('active');
+                gameInProgress = true;
+            }, 1000);
+        }
+
+        function play(playerChoice) {
+            if (gameInProgress === false) return;
+
+            gameInProgress = false;
+            document.getElementById('game-controls').classList.remove('active');
+
+            // Decide outcome with probabilities: win 30%, lose 50%, draw 20%
+            const r = Math.random();
+            let outcome;
+            if (r < 0.3) outcome = 'win';
+            else if (r < 0.8) outcome = 'lose';
+            else outcome = 'draw';
+
+            const beats = { rock: 'scissors', scissors: 'paper', paper: 'rock' };
+            const losesTo = { rock: 'paper', scissors: 'rock', paper: 'scissors' };
+
+            let botChoice;
+            if (outcome === 'win') {
+                // bot picks the move that loses to the player's choice
+                botChoice = beats[playerChoice] || ['rock', 'scissors', 'paper'][Math.floor(Math.random() * 3)];
+            } else if (outcome === 'lose') {
+                // bot picks the move that beats the player's choice
+                botChoice = losesTo[playerChoice] || ['rock', 'scissors', 'paper'][Math.floor(Math.random() * 3)];
+            } else {
+                // draw
+                botChoice = playerChoice;
+            }
+
+            const playerHandImg = document.getElementById('player-hand');
+            const botHandImg = document.getElementById('bot-hand');
+            const statusDiv = document.getElementById('game-status');
+
+            playerHandImg.src = '/static/img/camen.png';
+            botHandImg.src = '/static/img/camen.png';
+            playerHandImg.classList.add('shaking-v');
+            botHandImg.classList.add('shaking-v');
+
+            statusDiv.textContent = 'One... Two... Three!';
+            statusDiv.className = 'game-status';
+
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+
+            setTimeout(() => {
+                playerHandImg.classList.remove('shaking-v');
+                botHandImg.classList.remove('shaking-v');
+
+                // Map logical choices to actual image filenames
+                const imgMap = { rock: 'camen.png', scissors: 'nojnici.png', paper: 'paper.png' };
+                playerHandImg.src = `/static/img/${imgMap[playerChoice] || (playerChoice + '.png')}`;
+                botHandImg.src = `/static/img/${imgMap[botChoice] || (botChoice + '.png')}`;
+
+                let result = '';
+                let winAmount = 0;
+
+                if (playerChoice === botChoice) {
+                    result = 'Draw! No change';
+                    statusDiv.className = 'game-status draw';
+                    winAmount = 0;
+                } else if (
+                    (playerChoice === 'rock' && botChoice === 'scissors') ||
+                    (playerChoice === 'scissors' && botChoice === 'paper') ||
+                    (playerChoice === 'paper' && botChoice === 'rock')
+                ) {
+                    result = 'You won! +' + currentBet.toFixed(2) + ' TON';
+                    playerScore++;
+                    winAmount = currentBet;
+                    statusDiv.className = 'game-status win';
+                } else {
+                    result = 'You lost! -' + currentBet.toFixed(2) + ' TON';
+                    botScore++;
+                    winAmount = -currentBet;
+                    statusDiv.className = 'game-status lose';
+                }
+
+                statusDiv.textContent = result;
+                updateScore();
+
+                // Update balance immediately on client
+                currentBalance += winAmount;
+                document.getElementById('header-balance').textContent = currentBalance.toFixed(2) + ' TON';
+                
+                // Sync with server
+                syncGameResult(playerChoice, botChoice, winAmount);
+
+                setTimeout(() => {
+                    statusDiv.textContent = 'Play again?';
+                    document.getElementById('game-controls').classList.add('active');
+                    gameInProgress = true;
+                }, 1500);
             }, 1100);
         }
+
+        async function syncGameResult(playerChoice, botChoice, winAmount) {
+            if (!currentUserId) return;
+            try {
+                await fetch(`/api/game/result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        player_choice: playerChoice,
+                        bot_choice: botChoice,
+                        amount: winAmount,
+                        bet: currentBet
+                    })
+                });
+            } catch (e) {
+                console.error('Error syncing game result:', e);
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `${playerScore} : ${botScore}`;
+        }
     </script>
+    
+    <!-- TonConnect UI Container -->
+    <ton-connect-ui></ton-connect-ui>
+    
+    <!-- Ensure TonConnectUI is loaded -->
+    <script>
+        window.addEventListener('load', () => {
+            if (typeof TonConnectUI === 'undefined') {
+                console.warn('[WARN] TonConnectUI not loaded, attempting fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+                script.async = true;
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+    
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

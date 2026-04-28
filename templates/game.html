@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game - RPS Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #ffffff;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #ffffff;
+        }
+
+        /* HEADER */
+        .game-header {
+            padding: 12px 15px;
+            background: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .game-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .game-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .game-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .balance-box {
+            background: #f5f5f5;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .balance-value {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .exit-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .exit-btn:hover {
+            background: #c82333;
+        }
+
+        /* MAIN CONTENT */
+        .game-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            padding-bottom: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* ROOM INFO */
+        .room-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .room-info-item {
+            text-align: center;
+        }
+
+        .room-info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .room-info-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        /* Players Section */
+        .players-section {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .player-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .player-card.self {
+            background: #e8f5e9;
+            border-color: #28a745;
+        }
+
+        .player-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin: 0 auto;
+            background: #e3f2fd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 2px solid #ddd;
+            object-fit: cover;
+        }
+
+        .player-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .player-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-status {
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .player-status.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .player-choice {
+            font-size: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ROUND TIMER */
+        .round-timer {
+            background: #f0f7ff;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .round-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .timer-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            font-family: 'Courier New', monospace;
+            min-height: 56px;
+        }
+
+        .timer-display.warning {
+            color: #ff6900;
+        }
+
+        .timer-display.critical {
+            color: #dc3545;
+        }
+
+        /* CHOICES SECTION */
+        .choices-section {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            display: none;
+        }
+
+        .choices-section.active {
+            display: block;
+        }
+
+        .choices-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .choice-btn {
+            background: #ffffff;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: #333;
+        }
+
+        .choice-btn:hover {
+            border-color: #007bff;
+            background: #f0f7ff;
+        }
+
+        .choice-btn.selected {
+            border-color: #28a745;
+            background: #e8f5e9;
+            color: #28a745;
+        }
+
+        .choice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .choice-label {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        /* RESULT SECTION */
+        .result-section {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .result-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .result-subtitle {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* GAME OVER SECTION */
+        .game-over-section {
+            background: #f0f7ff;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .game-over-section.active {
+            display: block;
+        }
+
+        .winner-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .final-stats {
+            background: #ffffff;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        /* BUTTONS */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* LOADING */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ERROR */
+        .error-message {
+            background: #fdf5f5;
+            border: 1px solid #dc3545;
+            border-left: 4px solid #dc3545;
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #dc3545;
+            display: none;
+            margin-bottom: 10px;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        /* BOTTOM NAV */
+        nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #666;
+            font-size: 11px;
+            flex: 1;
+        }
+
+        .nav-item:hover {
+            color: #007bff;
+        }
+
+        .nav-svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* Game State */
+        .game-state {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .round-info {
+            font-size: 13px;
+            margin-bottom: 10px;
+            color: #aaa;
+        }
+
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #64c8ff;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            min-height: 55px;
+        }
+
+        .timer.warning {
+            color: #ffc800;
+        }
+
+        .timer.critical {
+            color: #ff6b6b;
+        }
+
+        /* Choices Section */
+        .choices-section {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+        }
+
+        .choices-section.active {
+            display: block;
+        }
+
+        .choices-label {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .choice-btn {
+            background: rgba(45, 0, 82, 0.6);
+            border: 2px solid rgba(100, 200, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+        }
+
+        .choice-btn:hover {
+            border-color: rgba(100, 200, 255, 0.6);
+            background: rgba(60, 20, 100, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .choice-btn.selected {
+            border-color: rgba(100, 200, 100, 0.8);
+            background: rgba(45, 82, 45, 0.8);
+            color: #64c800;
+        }
+
+        .choice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .choice-label {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        /* Result Section */
+        .result-section {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .round-result {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .round-winner {
+            color: #64c800;
+            font-weight: bold;
+        }
+
+        .round-tie {
+            color: #ffc800;
+        }
+
+        /* Game Over */
+        .game-over-section {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(100, 200, 100, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .game-over-section.active {
+            display: block;
+        }
+
+        .winner-announcement {
+            font-size: 24px;
+            color: #64c800;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .final-stats {
+            background: rgba(45, 0, 82, 0.4);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #64c8ff;
+            font-weight: bold;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: rgba(100, 200, 255, 0.2);
+            color: #64c8ff;
+            border: 1px solid rgba(100, 200, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            background: rgba(100, 200, 255, 0.3);
+            border-color: rgba(100, 200, 255, 0.8);
+        }
+
+        .btn-secondary {
+            background: rgba(100, 200, 100, 0.2);
+            color: #64c800;
+            border: 1px solid rgba(100, 200, 100, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 200, 100, 0.3);
+            border-color: rgba(100, 200, 100, 0.8);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #aaa;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(100, 200, 255, 0.2);
+            border-top-color: #64c8ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error */
+        .error-message {
+            background: rgba(255, 100, 100, 0.1);
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            border-radius: 8px;
+            padding: 10px;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <div class="game-header">
+            <div class="game-header-left">
+                <span class="game-title">Game</span>
+            </div>
+            <div class="game-header-right">
+                <div class="balance-box">
+                    <span class="balance-value" id="header-balance">0.00</span> TON
+                </div>
+                <button class="exit-btn" onclick="exitGame()">Exit</button>
+            </div>
+        </div>
+
+        <!-- ERROR MESSAGE -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- GAME CONTAINER -->
+        <div class="game-container" id="gameContent">
+            <!-- LOADING -->
+            <div class="loading" id="loadingState">
+                <div class="spinner"></div>
+                <p>Loading game...</p>
+            </div>
+
+            <!-- ROOM INFO -->
+            <div class="room-info" id="roomInfoSection" style="display: none;">
+                <div class="room-info-item">
+                    <div class="room-info-label">Stake</div>
+                    <div class="room-info-value" id="stakeDisplay">0.00</div>
+                </div>
+                <div class="room-info-item">
+                    <div class="room-info-label">Rounds</div>
+                    <div class="room-info-value" id="roundsDisplay">0</div>
+                </div>
+            </div>
+
+            <!-- PLAYERS SECTION -->
+            <div class="players-section" id="playersSection" style="display: none;">
+            </div>
+
+            <!-- ROUND TIMER -->
+            <div class="round-timer" id="roundTimerSection" style="display: none;">
+                <div class="round-label" id="roundLabel">Round 1/3</div>
+                <div class="timer-display" id="timerDisplay">30</div>
+            </div>
+
+            <!-- CHOICES SECTION -->
+            <div class="choices-section" id="choicesSection">
+                <div class="choices-label">Make Your Choice</div>
+                <div class="choices-grid">
+                    <button class="choice-btn" data-choice="rock">
+                        <span>R</span>
+                        <span class="choice-label">Rock</span>
+                    </button>
+                    <button class="choice-btn" data-choice="scissors">
+                        <span>S</span>
+                        <span class="choice-label">Scissors</span>
+                    </button>
+                    <button class="choice-btn" data-choice="paper">
+                        <span>P</span>
+                        <span class="choice-label">Paper</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RESULT SECTION -->
+            <div class="result-section" id="resultSection">
+                <div class="result-text" id="resultText"></div>
+                <div class="result-subtitle">Proceeding to next round...</div>
+            </div>
+
+            <!-- GAME OVER SECTION -->
+            <div class="game-over-section" id="gameOverSection">
+                <div class="winner-text" id="winnerText"></div>
+                <div class="final-stats" id="finalStats"></div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="location.href='/multiplayer'">Find Game</button>
+                    <button class="btn btn-primary" onclick="location.href='/'">Home</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <nav>
+            <a href="/" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            </a>
+            <a href="/market" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9H21L19 20H5L3 9Z"></path></svg>
+            </a>
+            <a href="/crafts" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M12 2v20M2 12h20"></path></svg>
+            </a>
+            <a href="/inventory" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </a>
+            <a href="/multiplayer" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><circle cx="9" cy="7" r="4"></circle><path d="M9 13H3v6a2 2 0 0 0 2 2h8"></path><circle cx="17" cy="7" r="4"></circle><path d="M21 13h-6v6a2 2 0 0 0 2 2h4"></path></svg>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        const roomId = new URLSearchParams(window.location.search).get('room_id');
+        let currentUserId = null;
+        let gameState = null;
+        let gameTimer = null;
+        let playerChoiceMap = {};
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get user from Telegram
+            try {
+                const tg = window.Telegram?.WebApp;
+                if (tg) {
+                    const user = tg.initDataUnsafe?.user;
+                    if (user) {
+                        currentUserId = user.id.toString();
+                    }
+                }
+            } catch (e) {
+                console.error('Telegram init error:', e);
+            }
+
+            if (!roomId) {
+                showError('No room ID provided');
+                return;
+            }
+
+            loadGameState();
+            setInterval(pollGameState, 2000);
+            setInterval(updateBalance, 3000);
+        });
+
+        async function loadGameState() {
+            try {
+                const response = await fetch(`/api/multiplayer/room/${roomId}`);
+                const data = await response.json();
+
+                if (data.status !== 'ok' || !data.room) {
+                    showError('Game not found');
+                    return;
+                }
+
+                gameState = data.room;
+                
+                // Hide loading, show content
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('roomInfoSection').style.display = 'grid';
+                document.getElementById('playersSection').style.display = 'grid';
+                document.getElementById('roundTimerSection').style.display = 'block';
+
+                updateDisplay();
+                updateBalance();
+            } catch (error) {
+                console.error('Error loading game:', error);
+                showError('Error loading game');
+            }
+        }
+
+        function updateDisplay() {
+            // Update room info
+            document.getElementById('stakeDisplay').textContent = (gameState.stake || 0).toFixed(2);
+            document.getElementById('roundsDisplay').textContent = gameState.rounds || 0;
+
+            // Update round label
+            const currentRound = gameState.current_round || 1;
+            document.getElementById('roundLabel').textContent = `Round ${currentRound}/${gameState.rounds || 0}`;
+
+            // Update players
+            updatePlayersDisplay();
+        }
+
+        function updatePlayersDisplay() {
+            const playersSection = document.getElementById('playersSection');
+            playersSection.innerHTML = '';
+
+            (gameState.players || []).forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `player-card ${player.user_id === currentUserId ? 'self' : ''}`;
+                
+                const choice = playerChoiceMap[player.user_id];
+                const choiceDisplay = choice ? choice.charAt(0).toUpperCase() : '';
+                
+                playerDiv.innerHTML = `
+                    <div class="player-avatar">${player.avatar_url ? `<img src="${player.avatar_url}">` : 'U'}</div>
+                    <div class="player-name">${player.username || 'Player'}</div>
+                    <div class="player-status ${choice ? 'ready' : ''}">${choice ? 'Ready' : 'Waiting'}</div>
+                    <div class="player-choice">${choiceDisplay}</div>
+                `;
+                playersSection.appendChild(playerDiv);
+            });
+        }
+
+        async function updateBalance() {
+            if (!currentUserId) return;
+            try {
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    document.getElementById('header-balance').textContent = (data.balance || 0).toFixed(2);
+                }
+            } catch (e) {
+                console.error('Error loading balance:', e);
+            }
+        }
+
+        async function pollGameState() {
+            if (!roomId) return;
+            try {
+                const response = await fetch(`/api/multiplayer/room/${roomId}`);
+                const data = await response.json();
+                if (data.status === 'ok' && data.room) {
+                    gameState = data.room;
+                    updatePlayersDisplay();
+                }
+            } catch (e) {
+                console.error('Poll error:', e);
+            }
+        }
+
+        document.querySelectorAll('.choice-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const choice = btn.dataset.choice;
+                
+                try {
+                    const response = await fetch('/api/multiplayer/make-move', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            room_id: roomId,
+                            user_id: currentUserId,
+                            choice: choice,
+                            round_number: gameState.current_round || 1
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.status === 'ok') {
+                        playerChoiceMap[currentUserId] = choice;
+                        
+                        // Disable buttons
+                        document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+                        btn.classList.add('selected');
+                    } else {
+                        showError(data.error || 'Error making move');
+                    }
+                } catch (error) {
+                    console.error('Move error:', error);
+                    showError('Failed to make move');
+                }
+            });
+        });
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.add('active');
+            setTimeout(() => errorEl.classList.remove('active'), 4000);
+        }
+
+        function exitGame() {
+            if (confirm('Exit game?')) {
+                location.href = '/multiplayer';
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

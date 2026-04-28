@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test Console</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'log') {
+            console.log(msg);
+            output.innerHTML += `<div style="color: ${type === 'error' ? 'red' : 'green'}">${msg}</div>`;
+        }
+        
+        async function test() {
+            log('[TEST] Starting API tests');
+            
+            try {
+                // Test 1: Get user
+                log('[TEST 1] GET /api/user/get');
+                const userRes = await fetch('/api/user/get?user_id=123456789');
+                const userData = await userRes.json();
+                log(`✅ User: ${JSON.stringify(userData)}`);
+                
+                // Test 2: Get gifts
+                log('[TEST 2] GET /static/data/gifts.json');
+                const giftsRes = await fetch('/static/data/gifts.json');
+                const gifts = await giftsRes.json();
+                log(`✅ Gifts: ${gifts.length} items loaded`);
+                
+                // Test 3: Buy gift
+                if (gifts.length > 0) {
+                    log('[TEST 3] POST /api/gift/buy');
+                    
+                    // First set balance
+                    await fetch('/api/user/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({user_id: 123456789, balance: 100})
+                    });
+                    
+                    const gift = gifts[0];
+                    const buyRes = await fetch('/api/gift/buy', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({user_id: 123456789, gift_id: gift.id})
+                    });
+                    
+                    if (buyRes.ok) {
+                        const buyData = await buyRes.json();
+                        log(`✅ Purchase: ${JSON.stringify(buyData)}`);
+                    } else {
+                        log(`❌ Purchase failed: ${buyRes.status}`, 'error');
+                    }
+                }
+                
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+        
+        window.onload = test;
+    </script>
+</body>
+</html>

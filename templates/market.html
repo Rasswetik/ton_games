@@ -1,73 +1,154 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Market - TON Gifts</title>
+    <title data-i18n="title_market">Market</title>
+    <script>
+        try {
+            const raw = localStorage.getItem('rps_settings');
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        } catch (e) { }
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="{{ url_for('static', filename='vendor/tonconnect-ui.min.js') }}"></script>
 </head>
 <body>
+    <div id="notification-drawer" style="position:fixed;top:12px;left:8px;right:8px;z-index:10000;display:flex;flex-direction:column;pointer-events:none;align-items:center;"></div>
     <div class="app-container">
-        <!-- TOP HEADER С АВАТАРОМ И ИМЕНЕМ -->
-        <div class="top-header">
-            <div class="header-user-info">
-                <div class="header-avatar-container">
-                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+        <!-- TOP HEADER -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); color: var(--text);">
+            <div class="header-user-info" style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px;">
+                    <svg id="header-avatar-svg" style="width: 100%; height: 100%; color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
+                    <img id="header-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
                 </div>
-                <span id="header-username" class="header-username">Пользователь</span>
+                <span id="header-username" style="font-size: 14px; font-weight: 500;">User</span>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--text-light);" data-i18n="balance_label">Balance</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="header-balance">0.00 TON</div>
+                </div>
+                <button onclick="openTopupModal()" style="background: var(--primary); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; font-weight: bold;">+</button>
             </div>
         </div>
 
-        <main class="market-container" style="padding: 16px; margin-top: 80px; flex-grow: 1; overflow-y: auto;">
-            <div class="gifts-grid" id="gifts-list">
+        <!-- MARKET GRID -->
+        <main style="padding: 16px; padding-bottom: 80px; background: var(--bg); flex: 1; overflow-y: auto;">
+            <h2 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600;" data-i18n="title_market">Gifts</h2>
+            
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                  <input type="text" id="search-gifts" data-i18n-placeholder="search_inventory_placeholder" placeholder="Search gifts..." 
+                      style="flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);"
+                       oninput="filterGifts()">
+            </div>
+            
+            <div id="gifts-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px;">
+                    <img src="{{ url_for('static', filename='gifs/gift.gif') }}" style="width: 80px; height: 80px; margin-bottom: 12px;">
+                    <p style="color: var(--text-light); margin: 0;" data-i18n="loading_gifts">Loading gifts...</p>
                 </div>
+            </div>
         </main>
 
-<nav class="bottom-nav">
+        <!-- BOTTOM NAVIGATION -->
+        <nav class="bottom-nav">
             <a href="{{ url_for('index') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-                <span>Главная</span>
             </a>
-            <a href="{{ url_for('market') }}" class="nav-item">
+            <a href="{{ url_for('market') }}" class="nav-item active">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
-                <span>Маркет</span>
             </a>
             <a href="{{ url_for('crafts') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                <span>Крафты</span>
             </a>
             <a href="{{ url_for('profile') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span>Профиль</span>
+            </a>
+            <a href="/inventory" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="8" cy="14" r="1.5"></circle><circle cx="16" cy="14" r="1.5"></circle></svg>
             </a>
         </nav>
     </div>
 
-    <div id="buy-modal" class="modal">
-        <div class="modal-content">
-            <img id="modal-img" src="" alt="Gift" style="width: 120px; height: 120px; object-fit: contain;">
-            <h2 id="modal-name" style="margin: 15px 0;">Название</h2>
-            <button id="confirm-buy-btn" class="buy-button-final">Купить</button>
-            <button onclick="closeModal()" class="close-btn">Отмена</button>
+    <!-- Global notification drawer inserted above; app.js will populate notifications here -->
+
+    <!-- BUY MODAL -->
+    <div id="buy-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 id="modal-name" style="margin: 0;" data-i18n="gift">Gift</h3>
+                <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+            </div>
+            <img id="modal-img" src="" alt="Gift" style="width: 150px; height: 150px; object-fit: contain; margin: 20px 0;">
+            <p id="modal-description" data-i18n="gift_description" style="font-size: 14px; color: var(--text-light); margin: 10px 0;"></p>
+            <p id="modal-price" style="font-size: 20px; font-weight: bold; color: var(--primary); margin: 15px 0;">0.0 TON</p>
+
+            <!-- QUANTITY -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin: 20px 0;">
+                <button id="qty-minus" onclick="decreaseQty()" style="width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 18px; font-weight: bold;">−</button>
+                <input type="text" id="qty-input" value="1" readonly style="width: 50px; text-align: center; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 16px; font-weight: bold; background: var(--card); color: var(--text);">
+                <button id="qty-plus" onclick="increaseQty()" style="width: 36px; height: 36px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 18px; font-weight: bold;">+</button>
+            </div>
+            <p id="total-price" style="font-size: 16px; color: var(--text-light); margin: 10px 0;">Total: <span id="total-price-value">0</span> TON</p>
+
+            <button id="confirm-buy-btn" style="width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 16px;" data-i18n="buy">Buy</button>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
-
-        // Инициализация header с аватаром
-        document.addEventListener('DOMContentLoaded', () => {
-            const tgUser = tg.initDataUnsafe?.user;
+        // Fallback showToast (будет перезаписана в app.js)
+        function showToast(message, type = 'info', duration = 3000) {
+            console.log(`[TOAST ${type}] ${message}`);
+            alert(message);
+        }
+        
+        // Инициализация Telegram с проверкой
+        function initTelegram() {
+            if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
+                console.warn('[WARN] Telegram WebApp not available');
+                return null;
+            }
             
-            if (tgUser) {
+            tg = window.Telegram.WebApp;
+            try {
+                tg.expand();
+                tg.ready();
+                console.log('[OK] Telegram initialized');
+                return tg;
+            } catch (e) {
+                console.error('[ERROR] Telegram init error:', e);
+                return null;
+            }
+        }
+        
+        // Template constants
+        const GIFT_GIF_URL = '{{ url_for("static", filename="gifs/gift.gif") }}';
+
+        let currentUserId = null;
+        let currentGift = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[MARKET] DOMContentLoaded fired');
+            
+            // Инициализируем Telegram
+            initTelegram();
+            
+            const tgUser = tg?.initDataUnsafe?.user;
+            console.log('[MARKET] tgUser:', tgUser);
+            
+            if (tgUser && tgUser.id) {
+                currentUserId = tgUser.id;
+                console.log('[MARKET] CurrentUserId set to:', currentUserId);
+                
                 const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
                 document.getElementById('header-username').textContent = userName;
                 
@@ -76,86 +157,638 @@
                     document.getElementById('header-avatar-img').style.display = 'block';
                     document.getElementById('header-avatar-svg').style.display = 'none';
                 }
+            } else {
+                // Fallback без Telegram
+                currentUserId = 123;
+                console.log('[MARKET] Fallback mode: Test user 123');
+                document.getElementById('header-username').textContent = 'Test User';
+            }
+            
+            await loadGifts();
+            await loadBalance();
+            
+            // Load pending withdrawals for tracking
+            if (typeof loadPendingWithdrawals === 'function') {
+                await loadPendingWithdrawals();
+            }
+            
+            // Refresh balance every 5 seconds
+            setInterval(loadBalance, 5000);
+            
+            // Refresh pending withdrawals every 5 seconds
+            if (typeof loadPendingWithdrawals === 'function') {
+                setInterval(loadPendingWithdrawals, 5000);
             }
         });
 
-        // Инициализация TonConnect
-        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl: window.location.origin + '/tonconnect-manifest.json',
-            buttonRootId: 'ton-connect-header'
-        });
+        let pendingWithdrawalGifts = [];  // Global tracking for pending withdrawals (legacy)
+        let pendingWithdrawalRequests = [];
+        let pendingByIndex = new Set();
+        let pendingByGiftId = new Set();
+        
+        async function loadPendingWithdrawals() {
+            if (!currentUserId) return;
+            try {
+                const response = await fetch(`/api/user/pending-withdrawals?user_id=${currentUserId}&t=${new Date().getTime()}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    pendingWithdrawalRequests = data.pending_requests || [];
+                    pendingWithdrawalGifts = (data.pending_gift_ids || pendingWithdrawalRequests.map(r => r.gift_id)).map(id => String(id));
 
-        // Получаем данные из Telegram
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            document.getElementById('tg-username').textContent = tg.initDataUnsafe.user.first_name;
-            if (tg.initDataUnsafe.user.photo_url) {
-                document.getElementById('tg-avatar').src = tg.initDataUnsafe.user.photo_url;
+                    pendingByIndex = new Set();
+                    pendingByGiftId = new Set();
+                    pendingWithdrawalRequests.forEach(r => {
+                        if (r.inventory_index !== null && r.inventory_index !== undefined) pendingByIndex.add(String(r.inventory_index));
+                        if (r.gift_id) pendingByGiftId.add(String(r.gift_id));
+                    });
+
+                    if (pendingByGiftId.size === 0 && Array.isArray(data.pending_gift_ids)) {
+                        data.pending_gift_ids.forEach(id => pendingByGiftId.add(String(id)));
+                    }
+
+                    console.log('[MARKET] Pending withdrawals loaded:', { pendingWithdrawalRequests, pendingWithdrawalGifts });
+                }
+            } catch (error) {
+                console.error('[MARKET] Error loading pending withdrawals:', error);
             }
         }
 
-        // Функция загрузки подарков
         async function loadGifts() {
             const container = document.getElementById('gifts-list');
+            
             try {
-                // Прямая ссылка через Flask
-                const jsonPath = "{{ url_for('static', filename='data/gifts.json') }}";
-                const response = await fetch(jsonPath);
+                console.log('[DEBUG] Loading gifts from /api/gifts/list');
+                const timestamp = new Date().getTime();
+                const response = await fetch('/api/gifts/list?t=' + timestamp);
                 
-                if (!response.ok) throw new Error('Файл JSON не найден');
+                console.log('[DEBUG] Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
                 
-                const gifts = await response.json();
-                container.innerHTML = ''; 
+                const data = await response.json();
+                console.log('[DEBUG] API response:', data);
+                container.innerHTML = '';
 
-                gifts.forEach(gift => {
+                if (data.status !== 'ok' || !data.gifts || data.gifts.length === 0) {
+                    container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 40px 20px;"><img src="${GIFT_GIF_URL}" style="width: 80px; height: 80px; margin-bottom: 12px;"><p style="color: var(--text-light); margin: 0;" data-i18n="gifts_unavailable">Gifts unavailable</p></div>`;
+                    if (typeof applyLanguage === 'function') applyLanguage(document.documentElement.lang || 'ru');
+                    console.warn('[WARN] No gifts found');
+                    return;
+                }
+
+                data.gifts.forEach(gift => {
                     const card = document.createElement('div');
-                    card.className = 'gift-card';
+                    card.setAttribute('data-gift-name', gift.name);
+                    card.style.cssText = 'background: var(--card); border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border);';
+                    card.onmouseenter = function() {
+                        try {
+                            this.style.background = 'var(--bg)';
+                            this.style.border = '2px solid var(--primary)';
+                            this.style.transform = 'translateY(-2px)';
+                            this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                        } catch (e) { /* ignore */ }
+                    };
+                    card.onmouseleave = function() {
+                        try {
+                            this.style.background = 'var(--card)';
+                            this.style.border = '1px solid var(--border)';
+                            this.style.transform = '';
+                            this.style.boxShadow = '';
+                        } catch (e) { /* ignore */ }
+                    };
+                    
+                    let imgSrc = gift.image;
+                    if (!imgSrc.startsWith('/')) {
+                        imgSrc = '/static/img/gifts/' + imgSrc;
+                    }
+                    
                     card.innerHTML = `
-                        <div class="gift-img-wrapper">
-                            <img src="${gift.image}" alt="${gift.name}" onerror="this.src='{{ url_for('static', filename='img/default.png') }}'">
-                        </div>
-                        <div class="gift-price">${gift.price} TON</div>
+                        <img src="${imgSrc}" alt="${gift.name}" style="width: 70px; height: 70px; object-fit: contain; margin: 0 auto 8px; display: block;" onerror="this.src='/static/img/default.png'">
+                        <p style="font-size: 12px; color: var(--text); margin: 0 0 6px 0; font-weight: 600; line-height: 1.2;">${gift.name}</p>
+                        <p style="font-size: 13px; color: var(--primary); font-weight: bold; margin: 0;">${gift.price} TON</p>
                     `;
-                    card.onclick = () => openModal(gift);
+                    
+                    card.addEventListener('click', function() {
+                        console.log('[DEBUG] Gift clicked:', gift);
+                        openModal(gift);
+                    });
+                    
                     container.appendChild(card);
                 });
+                
+                // Apply translations for any generated nodes
+                if (typeof applyLanguage === 'function') applyLanguage(document.documentElement.lang || 'ru');
+                console.log('[DEBUG] Loaded ' + data.count + ' gifts');
             } catch (e) {
-                console.error("Ошибка загрузки:", e);
-                container.innerHTML = `<p style='text-align:center; color:#999; width:100%; grid-column: 1 / span 2; padding: 40px 0;'>
-                    Подарки временно недоступны.<br>
-                    <small>Проверьте наличие файла static/data/gifts.json</small>
-                </p>`;
+                console.error("[ERROR] Gift loading error:", e);
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px 20px; color: var(--text-light);">Ошибка загрузки подарков</div>';
             }
         }
 
         function openModal(gift) {
-            document.getElementById('modal-img').src = gift.image;
-            document.getElementById('modal-name').innerText = gift.name;
-            document.getElementById('buy-modal').classList.add('active');
+            currentGift = gift;
+            
+            let imgSrc = gift.image;
+            if (!imgSrc.startsWith('/')) {
+                imgSrc = '/static/img/gifts/' + imgSrc;
+            }
+            
+            document.getElementById('modal-img').src = imgSrc;
+            document.getElementById('modal-name').textContent = gift.name;
+            // Description is translation-driven via data-i18n; re-apply current language
+            if (typeof applyLanguage === 'function') applyLanguage(document.documentElement.lang || 'ru');
+            document.getElementById('modal-price').textContent = gift.price + ' TON';
+            
+            // Инициализируем количество
+            document.getElementById('qty-input').value = '1';
+            updateTotalPrice();
+            
+            document.getElementById('buy-modal').style.display = 'flex';
             
             document.getElementById('confirm-buy-btn').onclick = async () => {
-                const transaction = {
-                    validUntil: Math.floor(Date.now() / 1000) + 60,
-                    messages: [{
-                        address: "UQDw7-rC3VhNeN5VUjV_Kz5TVBJ5pX4EEI_OOSdU8J0oQkOh",
-                        amount: (gift.price * 1000000000).toString()
-                    }]
-                };
-                try {
-                    await tonConnectUI.sendTransaction(transaction);
-                    alert('Покупка совершена успешно!');
-                    closeModal();
-                } catch (e) { 
-                    console.error("Ошибка транзакции:", e);
-                }
+                const qty = parseInt(document.getElementById('qty-input').value) || 1;
+                await purchaseGift(gift.id, gift.name, gift.price, qty);
             };
+        }
+        
+        function increaseQty() {
+            const input = document.getElementById('qty-input');
+            let qty = parseInt(input.value) || 1;
+            qty++;
+            input.value = qty;
+            updateTotalPrice();
+        }
+        
+        function decreaseQty() {
+            const input = document.getElementById('qty-input');
+            let qty = parseInt(input.value) || 1;
+            if (qty > 1) {
+                qty--;
+                input.value = qty;
+                updateTotalPrice();
+            }
+        }
+        
+        function updateTotalPrice() {
+            if (!currentGift) return;
+            const qty = parseInt(document.getElementById('qty-input').value) || 1;
+            const total = (currentGift.price * qty).toFixed(2);
+            document.getElementById('total-price-value').textContent = total;
+        }
+        
+        function showSuccessNotification(message, iconSrc) {
+            if (typeof showToast === 'function') { showToast(message, 'success', iconSrc); return; }
+            const notif = document.getElementById('success-notification');
+            if (iconSrc) {
+                document.getElementById('success-message').innerHTML = `<img src="${iconSrc}" style="width:28px;height:28px;margin-right:8px;vertical-align:middle;">` + message;
+            } else {
+                document.getElementById('success-message').textContent = message;
+            }
+            notif.style.display = 'block';
+            setTimeout(() => { notif.style.display = 'none'; }, 3000);
+        }
+
+        async function purchaseGift(giftId, giftName, giftPrice, qty = 1) {
+            console.log('[PURCHASE] Start with params:', { giftId, giftName, giftPrice, qty, currentUserId });
+            
+                if (!currentUserId) {
+                if (typeof showToast === 'function') showToast('User ID not found', 'error'); else alert('[ERROR] User ID not found');
+                return;
+            }
+            
+            const cleanGiftId = String(giftId || '').trim().toLowerCase();
+            const numPrice = parseFloat(giftPrice);
+            const totalPrice = numPrice * qty;
+            
+            console.log('[PURCHASE] After cleanup:', { cleanGiftId, numPrice, totalPrice });
+            
+            try {
+                const btn = document.getElementById('confirm-buy-btn');
+                btn.disabled = true;
+                btn.textContent = (typeof t === 'function') ? t('processing') : 'Processing...';
+                
+                // Покупаем подарок несколько раз
+                for (let i = 0; i < qty; i++) {
+                    const requestBody = {
+                        user_id: currentUserId,
+                        gift_id: cleanGiftId
+                    };
+                    
+                    console.log('[PURCHASE] Sending request', i + 1, '/', qty, ':', requestBody);
+                    
+                    const response = await fetch('/api/gift/buy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    console.log('[PURCHASE] Response status:', response.status);
+                    const data = await response.json();
+                    console.log('[PURCHASE] Response data:', data);
+                    
+                    if (data.status !== 'ok') {
+                        if (typeof showToast === 'function') showToast(data.error || data.message || 'Unknown error', 'error'); else alert('[ERROR] ' + (data.error || data.message || 'Unknown error'));
+                        btn.disabled = false;
+                        btn.textContent = (typeof t === 'function') ? t('buy') : 'Buy';
+                        return;
+                    }
+                }
+                
+                // Show success notification (include gift PNG icon when possible)
+                let imgIcon = null;
+                try {
+                    if (typeof currentGift !== 'undefined' && currentGift && currentGift.image) {
+                        imgIcon = currentGift.image.startsWith('/') ? currentGift.image : '/static/img/gifts/' + currentGift.image;
+                    }
+                } catch (e) { imgIcon = null; }
+
+                if (qty === 1) {
+                    showSuccessNotification('Gift ' + giftName + ' purchased', imgIcon);
+                } else {
+                    showSuccessNotification(qty + ' x ' + giftName + ' purchased', imgIcon);
+                }
+                
+                closeModal();
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+                
+            } catch (e) {
+                console.error('[PURCHASE] Error:', e);
+                if (typeof showToast === 'function') showToast('Purchase error: ' + e.message, 'error'); else alert('[ERROR] Purchase error: ' + e.message);
+                document.getElementById('confirm-buy-btn').disabled = false;
+                document.getElementById('confirm-buy-btn').textContent = 'Buy';
+            }
+        }
+
+        function filterGifts() {
+            const searchText = document.getElementById('search-gifts').value.toLowerCase();
+            const cards = document.querySelectorAll('[data-gift-name]');
+            
+            cards.forEach(card => {
+                const giftName = card.getAttribute('data-gift-name').toLowerCase();
+                if (giftName.includes(searchText)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
         }
 
         function closeModal() {
-            document.getElementById('buy-modal').classList.remove('active');
+            document.getElementById('buy-modal').style.display = 'none';
+            currentGift = null;
         }
 
-        // Запуск
-        loadGifts();
+        // Закрытие модала при клике на фон
+        document.getElementById('buy-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'buy-modal') {
+                closeModal();
+            }
+        });
+
+        async function loadBalance() {
+            if (!currentUserId) return;
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}&t=${timestamp}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    const balance = parseFloat(data.balance || 0).toFixed(2);
+                    document.getElementById('header-balance').textContent = balance + ' TON';
+                }
+            } catch (e) {
+                console.error('Error loading balance:', e);
+            }
+        }
+    </script>
+    
+    <!-- TonConnect UI Container -->
+    <ton-connect-ui></ton-connect-ui>
+    
+    <!-- Top-up Modal (Bottom Sheet) -->
+    <div id="topup-modal" class="modal-overlay" style="position: fixed; bottom: 0; left: 0; right: 0; top: 0; width: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0;">
+        <div class="modal-content" style="background: var(--card); color: var(--text); border-radius: 24px 24px 0 0; padding: 24px 20px 20px; width: 100%; max-width: 100%; text-align: center; max-height: 80vh; overflow-y: auto; box-shadow: 0 -4px 24px rgba(0,0,0,0.25); animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Пополнить баланс</h2>
+                <button class="modal-close" onclick="closeTopupModal()" aria-label="Close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s; border-radius: 8px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-light)'">×</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <!-- TON Button -->
+                <button onclick="selectTopupMethod('ton')" id="ton-topup-btn" disabled style="flex: 1; padding: 16px 12px; background: #cccccc; border: 2px solid #999999; border-radius: 14px; cursor: not-allowed; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: #666666; box-shadow: none; opacity: 0.6;">
+                    <img src="/static/img/ton.png" style="width: 40px; height: 40px; object-fit: contain; opacity: 0.6;">
+                    <div style="font-size: 14px; font-weight: 800;">TON</div>
+                    <div style="font-size: 12px; font-weight: 500;">Недоступно</div>
+                </button>
+                
+                <!-- Stars Button -->
+                <button onclick="selectTopupMethod('stars')" id="stars-topup-btn" style="flex: 1; padding: 16px 12px; background: var(--card); border: 2px solid var(--border); border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <img src="/static/img/star.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <div style="font-size: 14px; font-weight: 800; color: var(--text);">Telegram Stars</div>
+                    <div style="font-size: 12px; color: var(--text-light); font-weight: 500;">1 звезда</div>
+                </button>
+            </div>
+            
+            <!-- Amount Input -->
+            <div id="topup-amount-section" style="display: none; margin-bottom: 24px;">
+                <label style="font-size: 13px; color: var(--text-light); margin-bottom: 10px; display: block; text-align: left; font-weight: 600; letter-spacing: 0.3px;">Сумма:</label>
+                <input type="number" id="topup-amount-input" placeholder="1" min="1" step="1" style="width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; transition: border-color 0.2s; box-sizing: border-box;" onpaste="return false" oncopy="return false">
+            </div>
+            
+            <!-- Confirm Button -->
+            <button id="topup-confirm-btn" onclick="confirmTopup()" style="display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), rgba(0,100,200,0.8)); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,100,200,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(0,100,200,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,100,200,0.3)';">
+                Пополнить баланс
+            </button>
+        </div>
+    </div>
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        #topup-amount-input::-webkit-outer-spin-button,
+        #topup-amount-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #topup-amount-input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        #topup-amount-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,100,200,0.1);
+        }
+        #topup-amount-input::placeholder {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+    </style>
+    
+    <!-- Ensure TonConnectUI is loaded -->
+    <script>
+        // Pre-check that TonConnectUI loaded
+        window.addEventListener('load', () => {
+            if (typeof TonConnectUI === 'undefined') {
+                console.warn('[WARN] TonConnectUI not loaded from unpkg, attempting fallback...');
+                // Try alternative CDN
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+                script.async = true;
+                document.head.appendChild(script);
+            } else {
+                console.log('[OK] TonConnectUI loaded successfully');
+            }
+        });
+    </script>
+    
+    
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    
+    <script>
+        // ===== TOP-UP MODAL FUNCTIONS (MARKET) =====
+        let selectedTopupMethod = 'stars';
+
+        function openTopupModal() {
+            document.getElementById('topup-modal').style.display = 'flex';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.zIndex = '999';
+            selectedTopupMethod = 'stars';
+            updateTopupUI();
+        }
+
+        function closeTopupModal() {
+            document.getElementById('topup-modal').style.display = 'none';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.zIndex = 'auto';
+            document.getElementById('topup-amount-section').style.display = 'none';
+            document.getElementById('topup-confirm-btn').style.display = 'none';
+        }
+
+        function selectTopupMethod(method) {
+            if (method === 'ton') return; // TON disabled
+            selectedTopupMethod = method;
+            updateTopupUI();
+        }
+        
+        function updateTopupUI() {
+            const starsBtn = document.getElementById('stars-topup-btn');
+            const input = document.getElementById('topup-amount-input');
+            
+            // Setup for Stars
+            starsBtn.style.background = 'linear-gradient(135deg, #FFD700, rgba(255,215,0,0.2))';
+            starsBtn.style.borderColor = '#FFD700';
+            starsBtn.style.color = '#333';
+            
+            input.type = 'number';
+            input.step = '1';
+            input.min = '1';
+            input.value = '';
+            input.placeholder = '1';
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            document.getElementById('topup-amount-section').style.display = 'block';
+            document.getElementById('topup-confirm-btn').style.display = 'block';
+        }
+
+        async function confirmTopup() {
+            const amount = document.getElementById('topup-amount-input').value;
+            
+            if (!amount || parseInt(amount) <= 0) {
+                alert('Введите корректную сумму');
+                return;
+            }
+            
+            if (selectedTopupMethod === 'stars') {
+                processTopupStars(parseInt(amount));
+            }
+        }
+
+        async function processTopupStars(amount) {
+            const confirmBtn = document.getElementById('topup-confirm-btn');
+            const originalText = confirmBtn.textContent;
+            
+            try {
+                const user_id = window.tgUserId || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.id) || 'anonymous';
+                
+                // Show loading state
+                confirmBtn.textContent = 'Загрузка...';
+                confirmBtn.disabled = true;
+                console.log('[Payment] Creating invoice for', amount, 'stars, user:', user_id);
+                
+                const createResponse = await fetch('/api/create-stars-invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user_id, stars_amount: parseInt(amount) })
+                });
+                
+                if (!createResponse.ok) {
+                    console.error('[Payment] Create invoice HTTP error:', createResponse.status);
+                    throw new Error('Ошибка сервера: ' + createResponse.status);
+                }
+                
+                const invoiceData = await createResponse.json();
+                console.log('[Payment] Invoice response:', invoiceData);
+                
+                if (!invoiceData.success) {
+                    console.error('[Payment] Invoice error:', invoiceData.error);
+                    throw new Error(invoiceData.error || 'Не удалось создать счет');
+                }
+                
+                if (!invoiceData.invoice_link) {
+                    console.error('[Payment] No invoice link in response');
+                    console.error('[Payment] Response was:', JSON.stringify(invoiceData));
+                    throw new Error('Ссылка на платеж не получена (демо режим?)');
+                }
+                
+                console.log('[Payment] Invoice link received:', invoiceData.invoice_link);
+                console.log('[Payment] Invoice link starts with:', invoiceData.invoice_link.substring(0, 50));
+                
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
+                
+                console.log('[Payment] Opening Telegram invoice');
+                
+                if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && typeof window.Telegram.WebApp.openInvoice === 'function') {
+                    let callbackFired = false;
+                    let initialBalance = null;
+                    
+                    // Get initial balance for verification
+                    try {
+                        const balanceResp = await fetch(`/api/user/get?user_id=${user_id}`);
+                        const balanceData = await balanceResp.json();
+                        if (balanceData.status === 'ok') {
+                            initialBalance = parseFloat(balanceData.balance || 0);
+                            console.log('[Payment] Initial balance:', initialBalance);
+                        }
+                    } catch (e) {
+                        console.error('[Payment] Failed to get initial balance:', e);
+                    }
+                    
+                    // Set timeout in case callback doesn't fire
+                    const timeoutId = setTimeout(async () => {
+                        if (!callbackFired) {
+                            console.log('[Payment] Callback timeout - checking balance...');
+                            clearTimeout(timeoutId);
+                            
+                            // Auto-check payment by polling balance
+                            let paymentConfirmed = false;
+                            for (let attempt = 0; attempt < 10; attempt++) {
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1 sec
+                                
+                                try {
+                                    const checkResp = await fetch(`/api/user/get?user_id=${user_id}&t=${Date.now()}`);
+                                    const checkData = await checkResp.json();
+                                    if (checkData.status === 'ok') {
+                                        const newBalance = parseFloat(checkData.balance || 0);
+                                        const tonEquivalent = (amount * 0.01).toFixed(4);
+                                        console.log('[Payment] Checked balance:', newBalance, '(was:', initialBalance, ')');
+                                        
+                                        if (newBalance > initialBalance) {
+                                            console.log('[Payment] ✅ Balance increased - payment successful!');
+                                            paymentConfirmed = true;
+                                            break;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('[Payment] Error checking balance:', e);
+                                }
+                            }
+                            
+                            closeTopupModal();
+                            
+                            if (paymentConfirmed) {
+                                alert(`✅ Спасибо за пополнение!\n${amount} Stars = ${(amount * 0.01).toFixed(4)} TON`);
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                alert('⏳ Платеж обрабатывается...\nПожалуйста, закройте эту страницу и вернитесь через несколько минут для проверки баланса.');
+                                setTimeout(() => location.reload(), 3000);
+                            }
+                        }
+                    }, 30000); // 30 second timeout
+                    
+                    try {
+                        window.Telegram.WebApp.openInvoice(invoiceData.invoice_link, async (status) => {
+                            callbackFired = true;
+                            clearTimeout(timeoutId);
+                            console.log('[Payment] Invoice callback with status:', status);
+                            
+                            if (status === 'paid') {
+                                await confirmStarsPayment(invoiceData.invoice_id, user_id, amount);
+                                closeTopupModal();
+                                alert(`✅ Спасибо за пополнение!\n${amount} Stars = ${invoiceData.ton_equivalent.toFixed(4)} TON`);
+                            } else if (status === 'failed') {
+                                alert('❌ Платёж не прошёл. Попробуйте еще раз.');
+                            } else if (status === 'cancelled') {
+                                alert('❌ Платёж отменён');
+                            } else {
+                                console.log('[Payment] Unknown status:', status);
+                                alert('Статус платежа: ' + status);
+                            }
+                        });
+                    } catch (invoiceError) {
+                        clearTimeout(timeoutId);
+                        console.error('[Payment] openInvoice error:', invoiceError);
+                        console.error('[Payment] Error name:', invoiceError.name);
+                        console.error('[Payment] Error message:', invoiceError.message);
+                        throw invoiceError;
+                    }
+                } else {
+                    console.log('[Payment] Telegram WebApp not available, processing directly');
+                    await confirmStarsPayment(invoiceData.invoice_id, user_id, amount);
+                    closeTopupModal();
+                    alert(`✅ Платёж обработан!\n${amount} Stars = ${invoiceData.ton_equivalent.toFixed(4)} TON`);
+                }
+            } catch (error) {
+                console.error('[Payment] Final error:', error);
+                console.error('[Payment] Error type:', error.constructor.name);
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
+                
+                // Show more detailed error
+                let errorMsg = error.message;
+                if (error.message.includes('WebAppInvoiceUrlInvalid')) {
+                    errorMsg = 'Неправильный формат ссылки платежа\n(свяжитесь с поддержкой)';
+                } else if (error.message.includes('демо')) {
+                    errorMsg = 'Сервер в демо режиме\n(платежи недоступны)';
+                }
+                
+                alert('⚠️ Ошибка платежа:\n' + errorMsg);
+            }
+        }
+
+        async function confirmStarsPayment(invoice_id, user_id, stars_amount) {
+            try {
+                const response = await fetch('/api/process-stars-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user_id, invoice_id: invoice_id, stars_amount: parseInt(stars_amount) })
+                });
+                if (!response.ok) throw new Error('Payment confirmation failed');
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Reload page to refresh balance
+                    setTimeout(() => location.reload(), 1000);
+                    console.log('[Stars Payment] Success:', data);
+                } else {
+                    console.error('[Stars Payment] Server error:', data);
+                }
+            } catch (error) {
+                console.error('Error confirming payment:', error);
+            }
+        }
+
+        // Close modal on outside click
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('topup-modal');
+            if (e.target === modal) closeTopupModal();
+        });
     </script>
 </body>
 </html>

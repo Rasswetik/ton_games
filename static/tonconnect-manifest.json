@@ -1,0 +1,16 @@
+{
+  "tonconnect": {
+    "version": 2
+  },
+  "app": {
+    "name": "RPS Games",
+    "description": "Rock Paper Scissors Game with TON Connect 2.0",
+    "url": "https://rpsgames.pythonanywhere.com",
+    "icons": [
+      "https://rpsgames.pythonanywhere.com/static/img/icon.png"
+    ]
+  },
+  "notification": {
+    "enabled": false
+  }
+}

@@ -1,55 +1,72 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TON Game</title>
+    <script>
+        // Apply theme early to avoid flash-of-incorrect-theme
+        try {
+            const raw = localStorage.getItem('rps_settings');
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+                else document.documentElement.removeAttribute('data-theme');
+            }
+        } catch (e) { /* ignore */ }
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- TOP HEADER С АВАТАРОМ И ИМЕНЕМ -->
+        <!-- TOP HEADER WITH AVATAR AND NAME -->
         <div class="top-header">
             <div class="header-user-info">
                 <div class="header-avatar-container">
-                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
+                    <svg id="header-avatar-svg" class="header-avatar" style="color:var(--primary)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                     <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
                 </div>
-                <span id="header-username" class="header-username">Пользователь</span>
+                <span id="header-username" class="header-username">User</span>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+                    <div style="text-align: right;">
+                    <div style="font-size: 12px; color: var(--text-light);">Balance</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="header-balance">0.00 TON</div>
+                </div>
+                <button onclick="openTopupModal()" style="background: var(--primary); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; font-weight: bold;">+</button>
             </div>
         </div>
 
-<div class="menu-list" style="margin-top: 80px;">
-    <a href="#" class="btn-game-large multiplayer">
+<div class="menu-list" style="margin-top: 80px; margin-bottom: 100px;">
+    <a href="/multiplayer" class="btn-game-large multiplayer">
         <img src="{{ url_for('static', filename='gifs/multi.gif') }}" class="game-gif-large" alt="multi">
         <div class="btn-text-content">
-            <span class="btn-title">МУЛЬТИПЛЕЕР</span>
-            <span class="btn-subtitle">Играй против людей</span>
+            <span class="btn-title">MULTIPLAYER</span>
+            <span class="btn-subtitle">Play against people</span>
         </div>
     </a>
 
     <a href="{{ url_for('bot') }}" class="btn-game-large bot-game">
         <img src="{{ url_for('static', filename='gifs/bot.gif') }}" class="game-gif-large" alt="bot">
         <div class="btn-text-content">
-            <span class="btn-title">БОТ-РЕЖИМ</span>
-            <span class="btn-subtitle">Игра с ботом 1х1</span>
+            <span class="btn-title">BOT MODE</span>
+            <span class="btn-subtitle">Play against bot</span>
         </div>
     </a>
     
     <a href="{{ url_for('admin_panel') }}" class="btn-game-large admin-panel" id="admin-btn" style="display: none;">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="2" style="margin: 0 auto; display: block;">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color:var(--primary); margin: 0 auto; display: block;" stroke-width="2">
             <circle cx="12" cy="12" r="1"></circle>
             <circle cx="19" cy="12" r="1"></circle>
             <circle cx="5" cy="12" r="1"></circle>
         </svg>
         <div class="btn-text-content">
-            <span class="btn-title">АДМИН ПАНЕЛЬ</span>
-            <span class="btn-subtitle">Управление игрой</span>
+            <span class="btn-title">ADMIN PANEL</span>
+            <span class="btn-subtitle">Game management</span>
         </div>
     </a>
 </div>
@@ -57,45 +74,465 @@
 <nav class="bottom-nav">
             <a href="{{ url_for('index') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-                <span>Главная</span>
             </a>
             <a href="{{ url_for('market') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
-                <span>Маркет</span>
             </a>
             <a href="{{ url_for('crafts') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                <span>Крафты</span>
             </a>
             <a href="{{ url_for('profile') }}" class="nav-item">
                 <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span>Профиль</span>
+            </a>
+            <a href="/inventory" class="nav-item">
+                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="8" cy="14" r="1.5"></circle><circle cx="16" cy="14" r="1.5"></circle></svg>
             </a>
         </nav>
+
+    <!-- Top-up Modal (Bottom Sheet) -->
+    <div id="topup-modal" class="modal-overlay" style="position: fixed; bottom: 0; left: 0; right: 0; top: 0; width: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0;">
+        <div class="modal-content" style="background: var(--card); color: var(--text); border-radius: 24px 24px 0 0; padding: 24px 20px 20px; width: 100%; max-width: 100%; text-align: center; max-height: 80vh; overflow-y: auto; box-shadow: 0 -4px 24px rgba(0,0,0,0.25); animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Пополнить баланс</h2>
+                <button class="modal-close" onclick="closeTopupModal()" aria-label="Close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s; border-radius: 8px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-light)'">×</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <!-- TON Button -->
+                <button onclick="selectTopupMethod('ton')" id="ton-topup-btn" disabled style="flex: 1; padding: 16px 12px; background: #cccccc; border: 2px solid #999999; border-radius: 14px; cursor: not-allowed; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: #666666; box-shadow: none; opacity: 0.6;">
+                    <img src="/static/img/ton.png" style="width: 40px; height: 40px; object-fit: contain; opacity: 0.6;">
+                    <div style="font-size: 14px; font-weight: 800;">TON</div>
+                    <div style="font-size: 12px; font-weight: 500;">Недоступно</div>
+                </button>
+                
+                <!-- Stars Button -->
+                <button onclick="selectTopupMethod('stars')" id="stars-topup-btn" style="flex: 1; padding: 16px 12px; background: var(--card); border: 2px solid var(--border); border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <img src="/static/img/star.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <div style="font-size: 14px; font-weight: 800; color: var(--text);">Telegram Stars</div>
+                    <div style="font-size: 12px; color: var(--text-light); font-weight: 500;">1 звезда</div>
+                </button>
+            </div>
+            
+            <!-- Amount Input -->
+            <div id="topup-amount-section" style="display: none; margin-bottom: 24px;">
+                <label style="font-size: 13px; color: var(--text-light); margin-bottom: 10px; display: block; text-align: left; font-weight: 600; letter-spacing: 0.3px;">Сумма:</label>
+                <input type="number" id="topup-amount-input" placeholder="1" min="1" step="1" style="width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; transition: border-color 0.2s; box-sizing: border-box;" onpaste="return false" oncopy="return false">
+            </div>
+            
+            <!-- Confirm Button -->
+            <button id="topup-confirm-btn" onclick="confirmTopup()" style="display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), rgba(0,100,200,0.8)); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,100,200,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(0,100,200,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,100,200,0.3)';">
+                Пополнить баланс
+            </button>
+        </div>
+    </div>
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        #topup-amount-input::-webkit-outer-spin-button,
+        #topup-amount-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #topup-amount-input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        #topup-amount-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,100,200,0.1);
+        }
+        #topup-amount-input::placeholder {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+    </style>
     </div>
 
+    <script src="{{ url_for('static', filename='tonconnect.js') }}"></script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tg = window.Telegram.WebApp;
-            const tgUser = tg.initDataUnsafe?.user;
+        // ===== TOP-UP MODAL FUNCTIONS (INDEX) =====
+        let selectedTopupMethod = 'stars';
+        let paymentInProgress = false;
+
+        function openTopupModal() {
+            if (paymentInProgress) {
+                console.log('[UI] Payment in progress, ignoring modal open');
+                return;
+            }
+            document.getElementById('topup-modal').style.display = 'flex';
+            document.querySelector('.bottom-nav').style.zIndex = '999';
+            selectedTopupMethod = 'stars';
+            updateTopupUI();
+        }
+
+        function closeTopupModal() {
+            if (paymentInProgress) {
+                console.log('[UI] Payment in progress, not closing modal');
+                return;
+            }
+            document.getElementById('topup-modal').style.display = 'none';
+            document.querySelector('.bottom-nav').style.zIndex = 'auto';
+            resetTopupForm();
+        }
+
+        function resetTopupForm() {
+            selectedTopupMethod = 'stars';
+            const tonBtn = document.getElementById('ton-topup-btn');
+            const starsBtn = document.getElementById('stars-topup-btn');
+            tonBtn.style.background = '#cccccc';
+            tonBtn.style.borderColor = '#999999';
+            starsBtn.style.background = 'linear-gradient(135deg, #FFD700, rgba(255,215,0,0.2))';
+            starsBtn.style.borderColor = '#FFD700';
+            document.getElementById('topup-amount-section').style.display = 'none';
+            document.getElementById('topup-confirm-btn').style.display = 'none';
+            document.getElementById('topup-amount-input').value = '';
+        }
+        
+        function updateTopupUI() {
+            const starsBtn = document.getElementById('stars-topup-btn');
+            const input = document.getElementById('topup-amount-input');
             
-            if (tgUser) {
-                const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
-                document.getElementById('header-username').textContent = userName;
+            starsBtn.style.background = 'linear-gradient(135deg, #FFD700, rgba(255,215,0,0.2))';
+            starsBtn.style.borderColor = '#FFD700';
+            
+            input.type = 'number';
+            input.step = '1';
+            input.min = '1';
+            input.value = '';
+            input.placeholder = '1';
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            }, { once: true });
+            
+            document.getElementById('topup-amount-section').style.display = 'block';
+            document.getElementById('topup-confirm-btn').style.display = 'block';
+        }
+
+        function selectTopupMethod(method) {
+            if (method === 'ton') return; // TON disabled
+            selectedTopupMethod = method;
+            updateTopupUI();
+        }
+
+        async function confirmTopup() {
+            const amount = document.getElementById('topup-amount-input').value;
+            
+            if (!amount || parseInt(amount) <= 0) {
+                alert('Введите корректную сумму');
+                return;
+            }
+            
+            if (selectedTopupMethod === 'stars') {
+                await processTopupStars(parseInt(amount));
+            }
+        }
+
+        async function processTopupStars(amount) {
+            if (paymentInProgress) {
+                console.warn('[Payment] Payment already in progress');
+                return;
+            }
+
+            paymentInProgress = true;
+            const confirmBtn = document.getElementById('topup-confirm-btn');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.disabled = true;
+            
+            try {
+                const user_id = window.tgUserId || (window.Telegram?.WebApp?.initDataUnsafe?.user?.id) || 'anonymous';
+                console.log('[Payment] 🔄 Starting payment process for', amount, 'stars, user:', user_id);
                 
-                if (tgUser.photo_url) {
-                    document.getElementById('header-avatar-img').src = tgUser.photo_url;
-                    document.getElementById('header-avatar-img').style.display = 'block';
-                    document.getElementById('header-avatar-svg').style.display = 'none';
+                confirmBtn.textContent = 'Загрузка платежа...';
+                
+                // Step 1: Get initial balance
+                console.log('[Payment] Step 1: Getting initial balance...');
+                let initialBalance = 0;
+                try {
+                    const balanceResp = await fetch(`/api/user/get?user_id=${user_id}`);
+                    const balanceData = await balanceResp.json();
+                    if (balanceData.status === 'ok') {
+                        initialBalance = parseFloat(balanceData.balance || 0);
+                        console.log('[Payment] Initial balance:', initialBalance, 'TON');
+                    }
+                } catch (e) {
+                    console.warn('[Payment] Could not get initial balance:', e);
                 }
                 
-                // Показать админ панель для нужных пользователей
-                const adminIds = [7679909245, 5257227556];
-                if (adminIds.includes(tgUser.id)) {
-                    document.getElementById('admin-btn').style.display = 'block';
+                // Step 2: Create invoice
+                console.log('[Payment] Step 2: Creating invoice...');
+                const createResponse = await fetch('/api/create-stars-invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user_id, stars_amount: parseInt(amount) })
+                });
+                
+                if (!createResponse.ok) {
+                    throw new Error(`Invoice creation failed: ${createResponse.status}`);
                 }
+                
+                const invoiceData = await createResponse.json();
+                console.log('[Payment] Invoice response:', invoiceData);
+                
+                if (!invoiceData.success) {
+                    console.error('[Payment] Invoice creation error:', invoiceData.error);
+                    throw new Error(invoiceData.error || 'Failed to create invoice');
+                }
+                
+                if (!invoiceData.invoice_link) {
+                    console.error('[Payment] No invoice_link in response');
+                    throw new Error('Invoice link not provided by server');
+                }
+                
+                console.log('[Payment] ✅ Invoice created:', invoiceData.invoice_id);
+                console.log('[Payment] Invoice link format:', invoiceData.invoice_link.substring(0, 50) + '...');
+                confirmBtn.textContent = 'Открываю платёж...';
+                
+                // Step 3: Open payment
+                console.log('[Payment] Step 3: Opening payment window...');
+                let paymentComplete = false;
+                let callbackReceived = false;
+                
+                // Start polling - check for balance change
+                let pollCount = 0;
+                const maxPolls = 60; // 60 seconds (1 minute)
+                const pollInterval = setInterval(async () => {
+                    if (paymentComplete) {
+                        clearInterval(pollInterval);
+                        return;
+                    }
+                    
+                    pollCount++;
+                    try {
+                        const resp = await fetch(`/api/user/get?user_id=${user_id}&t=${Date.now()}`);
+                        const data = await resp.json();
+                        
+                        if (data.status === 'ok' && data.balance !== undefined) {
+                            const currentBalance = parseFloat(data.balance);
+                            // Log every 5th poll to avoid spam
+                            if (pollCount % 5 === 1) {
+                                console.log(`[Payment] Poll #${pollCount}: balance = ${currentBalance} TON (initial: ${initialBalance}), diff = ${(currentBalance - initialBalance).toFixed(4)}`);
+                            }
+                            
+                            if (currentBalance > initialBalance + 0.001) {
+                                console.log('[Payment] ✅ Balance INCREASED detected! New balance:', currentBalance);
+                                paymentComplete = true;
+                                clearInterval(pollInterval);
+                                
+                                // Confirm payment on server
+                                await confirmStarsPayment(invoiceData.invoice_id, user_id, amount, currentBalance);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`[Payment] Poll #${pollCount} error:`, e);
+                    }
+                    
+                    if (pollCount >= maxPolls) {
+                        clearInterval(pollInterval);
+                        if (!paymentComplete) {
+                            console.log('[Payment] ⏱️ Polling timeout after 60 seconds');
+                            confirmBtn.textContent = 'Платеж может быть обработан позже';
+                            
+                            // Offer user to check balance manually
+                            setTimeout(() => {
+                                confirmBtn.textContent = 'Проверить баланс';
+                                confirmBtn.disabled = false;
+                                confirmBtn.onclick = async () => {
+                                    try {
+                                        const resp = await fetch(`/api/user/get?user_id=${user_id}`);
+                                        const data = await resp.json();
+                                        if (data.status === 'ok') {
+                                            const bal = parseFloat(data.balance);
+                                            alert(`Ваш текущий баланс: ${bal.toFixed(2)} TON`);
+                                            if (bal > initialBalance) {
+                                                console.log('[Payment] ✅ Balance increased! Reloading...');
+                                                location.reload();
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error('Error checking balance:', e);
+                                        alert('Ошибка проверки баланса');
+                                    }
+                                };
+                            }, 2000);
+                        }
+                    }
+                }, 1000);
+                
+                // Try to open invoice
+                if (window.Telegram?.WebApp?.openInvoice) {
+                    console.log('[Payment] Using Telegram WebApp.openInvoice with callback');
+                    console.log('[Payment] Invoice link:', invoiceData.invoice_link);
+                    console.log('[Payment] Invoice link type:', typeof invoiceData.invoice_link);
+                    
+                    try {
+                        window.Telegram.WebApp.openInvoice(invoiceData.invoice_link, async (status) => {
+                            console.log('[Payment] 📱 Telegram callback fired with status:', status);
+                            
+                            if (status === 'paid') {
+                                console.log('[Payment] Status is PAID - confirming immediately...');
+                                paymentComplete = true;
+                                callbackReceived = true;
+                                clearInterval(pollInterval);
+                                await confirmStarsPayment(invoiceData.invoice_id, user_id, amount, initialBalance);
+                            } else if (status === 'pending') {
+                                console.log('[Payment] Status is PENDING - continuing to poll...');
+                                // Don't stop polling, payment is still processing
+                                // Just update the button to show we're waiting
+                                confirmBtn.textContent = 'Платеж обрабатывается...';
+                            } else if (status === 'cancelled') {
+                                console.log('[Payment] User cancelled payment');
+                                callbackReceived = true;
+                                clearInterval(pollInterval);
+                                alert('❌ Платёж отменён');
+                                paymentInProgress = false;
+                                confirmBtn.textContent = originalText;
+                                confirmBtn.disabled = false;
+                            } else if (status === 'failed') {
+                                console.log('[Payment] Payment failed');
+                                callbackReceived = true;
+                                clearInterval(pollInterval);
+                                alert('❌ Платёж не прошёл. Попробуйте снова');
+                                paymentInProgress = false;
+                                confirmBtn.textContent = originalText;
+                                confirmBtn.disabled = false;
+                            } else {
+                                console.log('[Payment] Unknown status:', status);
+                            }
+                        });
+                        console.log('[Payment] ✅ openInvoice called successfully');
+                    } catch (e) {
+                        console.error('[Payment] ❌ WebApp.openInvoice thrown error:', e);
+                        console.error('[Payment] Error type:', e.constructor.name);
+                        console.error('[Payment] Error message:', e.message);
+                        console.error('[Payment] Error stack:', e.stack);
+                        
+                        // Don't try fallback, just continue polling
+                        console.log('[Payment] Continuing to poll for balance changes...');
+                    }
+                } else {
+                    console.log('[Payment] WebApp.openInvoice not available');
+                    console.log('[Payment] window.Telegram:', typeof window.Telegram);
+                    console.log('[Payment] window.Telegram.WebApp:', typeof window.Telegram?.WebApp);
+                    console.log('[Payment] window.Telegram.WebApp.openInvoice:', typeof window.Telegram?.WebApp?.openInvoice);
+                    
+                    console.log('[Payment] Fallback: continuing to poll for balance changes...');
+                }
+                
+            } catch (error) {
+                console.error('[Payment] Error:', error.message);
+                alert('❌ Ошибка платежа:\n' + error.message);
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
+                paymentInProgress = false;
+            }
+        }
+
+        async function confirmStarsPayment(invoice_id, user_id, stars_amount, finalBalance) {
+            try {
+                console.log('[Confirm] ============================================');
+                console.log('[Confirm] Starting payment confirmation...');
+                console.log('[Confirm] Parameters:', { invoice_id, user_id, stars_amount });
+                console.log('[Confirm] Sending POST to /api/process-stars-payment');
+                
+                const requestBody = { 
+                    user_id: user_id, 
+                    invoice_id: invoice_id, 
+                    stars_amount: parseInt(stars_amount) 
+                };
+                console.log('[Confirm] Request body:', requestBody);
+                
+                const response = await fetch('/api/process-stars-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                console.log('[Confirm] Response status:', response.status);
+                console.log('[Confirm] Response OK?', response.ok);
+                
+                if (!response.ok) {
+                    console.error('[Confirm] HTTP error: ' + response.status);
+                    const errorText = await response.text();
+                    console.error('[Confirm] Error response body:', errorText);
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('[Confirm] Response JSON:', data);
+                
+                if (data.success) {
+                    console.log('[Confirm] ✅ SUCCESS! New balance:', data.new_balance);
+                    
+                    // Update UI with new balance
+                    const headerBalance = document.getElementById('header-balance');
+                    if (headerBalance && data.new_balance !== undefined) {
+                        const displayBalance = parseFloat(data.new_balance).toFixed(2);
+                        headerBalance.textContent = displayBalance + ' TON';
+                        console.log('[UI] Updated balance display to:', displayBalance);
+                    }
+                    
+                    // Show success message
+                    closeTopupModal();
+                    alert(`✅ Спасибо!\n${stars_amount} ⭐ = ${(stars_amount * 0.01).toFixed(4)} TON\n\nВаш баланс пополнен!`);
+                    
+                    // Reload to refresh all UI
+                    console.log('[Confirm] Reloading page in 1.5 seconds...');
+                    setTimeout(() => location.reload(), 1500);
+                    
+                    return { success: true, new_balance: data.new_balance };
+                } else {
+                    console.error('[Confirm] Server returned success=false');
+                    console.error('[Confirm] Error from server:', data.error);
+                    
+                    // Check if payment was already processed
+                    if (data.error && data.error.includes('already')) {
+                        console.log('[Confirm] Payment was already processed');
+                        alert('✅ Платёж уже обработан! Баланс обновлён.');
+                        setTimeout(() => location.reload(), 1500);
+                        return { success: true };
+                    }
+                    
+                    alert('❌ ' + (data.error || 'Ошибка при обновлении баланса'));
+                    return { success: false, error: data.error };
+                }
+            } catch (error) {
+                console.error('[Confirm] ❌ EXCEPTION:', error);
+                console.error('[Confirm] Error message:', error.message);
+                console.error('[Confirm] Error stack:', error.stack);
+                
+                // Network error - don't alert user, just log
+                if (error.message.includes('Failed to fetch')) {
+                    console.log('[Confirm] Network error detected');
+                    alert('⚠️ Сеть недоступна, но платеж может быть обработан. Проверьте баланс позже.');
+                    return { success: false, error: error.message };
+                }
+                
+                alert('❌ Ошибка подтверждения: ' + error.message);
+                return { success: false, error: error.message };
+            } finally {
+                console.log('[Confirm] Cleanup: resetting paymentInProgress and button state');
+                paymentInProgress = false;
+                const confirmBtn = document.getElementById('topup-confirm-btn');
+                if (confirmBtn) {
+                    confirmBtn.textContent = 'Пополнить баланс';
+                    confirmBtn.disabled = false;
+                }
+                console.log('[Confirm] ============================================');
+            }
+        }
+
+        // Close modal on outside click
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('topup-modal');
+            if (e.target === modal && !paymentInProgress) {
+                closeTopupModal();
             }
         });
-    </script></body>
+    </script>
+</body>
 </html>

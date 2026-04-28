@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика системы</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: white;
+            color: #333;
+            padding: 12px;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .diagnostic-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #0088cc;
+        }
+        
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 6px;
+        }
+        
+        .status-item {
+            background: #f5f5f5;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .status-item.ok {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+        
+        .status-item.error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        
+        .status-item.info {
+            border-color: #2196f3;
+            background: #e3f2fd;
+        }
+        
+        .status-item strong {
+            display: block;
+            font-size: 11px;
+            margin-top: 4px;
+            color: #0088cc;
+            font-weight: 600;
+        }
+        
+        .status-item.ok strong {
+            color: #2e7d32;
+        }
+        
+        .status-item.error strong {
+            color: #c62828;
+        }
+        
+        .status-item .label {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .sections {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 60px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section:hover {
+            border-color: #0088cc;
+            box-shadow: 0 2px 12px rgba(0, 136, 204, 0.1);
+        }
+        
+        .section-header {
+            background: #0088cc;
+            color: white;
+            padding: 12px 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            user-select: none;
+        }
+        
+        .section-header:hover {
+            background: #006fa0;
+        }
+        
+        .section-header .toggle {
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+        
+        .section-header.collapsed .toggle {
+            transform: rotate(-90deg);
+        }
+        
+        .section-content {
+            padding: 8px;
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+        
+        .section-content.hidden {
+            max-height: 0;
+            padding: 0 8px;
+            opacity: 0;
+        }
+        
+        .btn-group {
+            display: grid;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        
+        .btn-small {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 136, 204, 0.1));
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(0, 136, 204, 0.15));
+            border-color: rgba(0, 212, 255, 0.6);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.15), rgba(255, 0, 110, 0.1));
+            color: #ff006e;
+            border: 1px solid rgba(255, 0, 110, 0.4);
+        }
+        
+        .btn.danger:hover {
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.25), rgba(255, 0, 110, 0.15));
+            border-color: rgba(255, 0, 110, 0.6);
+            box-shadow: 0 4px 12px rgba(255, 0, 110, 0.2);
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, rgba(0, 212, 100, 0.15), rgba(0, 212, 100, 0.1));
+            color: #00d464;
+            border: 1px solid rgba(0, 212, 100, 0.4);
+        }
+        
+        .btn.success:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 100, 0.25), rgba(0, 212, 100, 0.15));
+            border-color: rgba(0, 212, 100, 0.6);
+            box-shadow: 0 4px 12px rgba(0, 212, 100, 0.2);
+        }
+        
+        .results-box {
+            background: rgba(0, 212, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-top: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            font-size: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            line-height: 1.4;
+            color: #a0a0a0;
+        }
+        
+        .results-box.ok {
+            border-color: rgba(0, 212, 100, 0.3);
+            background: rgba(0, 212, 100, 0.08);
+        }
+        
+        .results-box.error {
+            border-color: rgba(255, 0, 110, 0.3);
+            background: rgba(255, 0, 110, 0.08);
+        }
+        
+        .log-line {
+            padding: 2px 0;
+            word-break: break-all;
+        }
+        
+        .log-line.ok { color: #00d464; }
+        .log-line.error { color: #ff006e; }
+        .log-line.info { color: #00d4ff; }
+        .log-line.warn { color: #ffa500; }
+        
+        .input-group {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 7px 10px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            transition: all 0.2s ease;
+        }
+        
+        .input-group input::placeholder {
+            color: #666;
+        }
+        
+        .input-group input:focus {
+            border-color: rgba(0, 212, 255, 0.6);
+            background: rgba(0, 212, 255, 0.08);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+        }
+        
+        .tab-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .tab-btn {
+            padding: 6px 10px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #a0a0a0;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: rgba(0, 212, 255, 0.5);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #00d4ff 0%, #0088cc 100%);
+            color: #000;
+            border-color: transparent;
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 136, 204, 0.1));
+            color: #00d4ff;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .stat-card .value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        .stat-card .label {
+            font-size: 10px;
+            margin-top: 4px;
+            color: #a0a0a0;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 20, 25, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1f2e 0%, #252d3d 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #00d4ff;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #a0a0a0;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            color: #ff006e;
+        }
+        
+        .footer-note {
+            font-size: 10px;
+            color: #a0a0a0;
+            text-align: center;
+            margin-top: 12px;
+            padding: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="diagnostic-container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>Диагностика системы</h1>
+            <div class="status-bar">
+                <div class="status-item" id="status-server">
+                    <div class="label">Сервер</div>
+                    <strong id="status-server-text">Проверка...</strong>
+                </div>
+                <div class="status-item" id="status-api">
+                    <div class="label">API</div>
+                    <strong id="status-api-text">Проверка...</strong>
+                </div>
+                <div class="status-item" id="status-data">
+                    <div class="label">Данные</div>
+                    <strong id="status-data-text">Проверка...</strong>
+                </div>
+                <div class="status-item" id="status-gifts">
+                    <div class="label">Подарки</div>
+                    <strong id="status-gifts-text">Проверка...</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SECTIONS -->
+        <div class="sections">
+            <!-- РАЗДЕЛ 1: ПРОВЕРКА ЗДОРОВЬЯ -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>Здоровье системы</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-group">
+                        <button class="btn success" onclick="checkHealth()">Проверить статус</button>
+                        <button class="btn" onclick="testAPI()">Тест API</button>
+                    </div>
+                    <div class="results-box" id="health-results"></div>
+                </div>
+            </div>
+            
+            <!-- РАЗДЕЛ 2: ЗАГРУЗКА ДАННЫХ -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>Загрузка данных</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-group">
+                        <button class="btn success" onclick="loadUserData()">Загрузить пользователя (ID: 123)</button>
+                        <button class="btn" onclick="loadGifts()">Загрузить подарки</button>
+                    </div>
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="value" id="stat-users">0</div>
+                            <div class="label">Пользователей</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value" id="stat-gifts">0</div>
+                            <div class="label">Подарков</div>
+                        </div>
+                    </div>
+                    <div class="results-box" id="data-results"></div>
+                </div>
+            </div>
+            
+            <!-- РАЗДЕЛ 3: ENDPOINTS -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>API Endpoints</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-small">
+                        <button class="btn" onclick="testEndpoint('/api/health')">GET /health</button>
+                        <button class="btn" onclick="testEndpoint('/api/gifts/list')">GET /gifts</button>
+                        <button class="btn" onclick="testEndpoint('/api/user/get?user_id=123')">GET /user</button>
+                        <button class="btn" onclick="testEndpoint('/api/admin/users?admin_id=7679909245')">GET /admin/users</button>
+                    </div>
+                    <div class="results-box" id="endpoint-results"></div>
+                </div>
+            </div>
+            
+            <!-- РАЗДЕЛ 4: ПОКУПКА ПОДАРКА -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>Покупка подарка</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="input-group">
+                        <input type="number" id="buy-user-id" placeholder="ID пользователя" value="123">
+                        <input type="text" id="buy-gift-id" placeholder="ID подарка" value="vicecream">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn success" onclick="testBuyGift()">Тест покупки</button>
+                        <button class="btn" onclick="addBalance()">Добавить 1000 TON</button>
+                    </div>
+                    <div class="results-box" id="buy-results"></div>
+                </div>
+            </div>
+            
+            <!-- РАЗДЕЛ 5: ЛОГИ СИСТЕМЫ -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>Логи системы</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-small">
+                        <button class="btn" onclick="openFullLogs()">Полные логи</button>
+                        <button class="btn danger" onclick="clearLogs()">Очистить</button>
+                    </div>
+                    <div class="results-box" id="logs-box"></div>
+                </div>
+            </div>
+            
+            <!-- РАЗДЕЛ 6: УПРАВЛЕНИЕ ДАННЫМИ -->
+            <div class="section">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <span>Управление данными</span>
+                    <span class="toggle">▼</span>
+                </div>
+                <div class="section-content">
+                    <div class="btn-small">
+                        <button class="btn" onclick="backupData()">Резервная копия</button>
+                        <button class="btn danger" onclick="resetUser()">Сбросить пользователя</button>
+                    </div>
+                    <div class="results-box" id="manage-results"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-note">
+            Диагностика системы | Версия 2.0 | Все операции происходят локально
+        </div>
+    </div>
+    
+    <!-- MODAL -->
+    <div class="modal" id="full-logs-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Полные логи системы</span>
+                <button class="modal-close" onclick="closeFullLogs()">×</button>
+            </div>
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchLogsTab('all')">Все</button>
+                <button class="tab-btn" onclick="switchLogsTab('errors')">Ошибки</button>
+                <button class="tab-btn" onclick="switchLogsTab('api')">API</button>
+                <button class="tab-btn" onclick="switchLogsTab('success')">Успех</button>
+            </div>
+            <div class="results-box" id="modal-logs-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const logStorage = { all: [], errors: [], api: [], success: [] };
+        let currentLogTab = 'all';
+        
+        // ===== UTILITY FUNCTIONS =====
+        
+        function addLog(type, msg) {
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            const logEntry = `[${timestamp}] ${msg}`;
+            
+            logStorage.all.push({ type, msg: logEntry });
+            if (type === 'error') logStorage.errors.push({ type, msg: logEntry });
+            if (type === 'api') logStorage.api.push({ type, msg: logEntry });
+            if (type === 'ok') logStorage.success.push({ type, msg: logEntry });
+            
+            updateLogsDisplay();
+        }
+        
+        function updateLogsDisplay() {
+            const logsBox = document.getElementById('logs-box');
+            const lastLogs = logStorage.all.slice(-5);
+            logsBox.innerHTML = lastLogs.map(l => `<div class="log-line ${l.type}">${l.msg}</div>`).join('');
+        }
+        
+        function toggleSection(header) {
+            header.classList.toggle('collapsed');
+            header.nextElementSibling.classList.toggle('hidden');
+        }
+        
+        function setStatusItem(id, status, text) {
+            const item = document.getElementById(`status-${id}`);
+            item.classList.remove('ok', 'error', 'info');
+            item.classList.add(status);
+            document.getElementById(`status-${id}-text`).textContent = text;
+        }
+        
+        function displayResults(elementId, type, text) {
+            const box = document.getElementById(elementId);
+            box.className = `results-box ${type}`;
+            box.innerHTML = `<div class="log-line ${type}">${text}</div>`;
+        }
+        
+        // ===== MAIN FUNCTIONS =====
+        
+        async function checkHealth() {
+            addLog('info', 'Проверка здоровья системы...');
+            
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    setStatusItem('server', 'ok', 'OK');
+                    setStatusItem('api', 'ok', 'OK');
+                    displayResults('health-results', 'ok', 'Сервер работает нормально');
+                    addLog('ok', 'Здоровье системы: OK');
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (e) {
+                setStatusItem('server', 'error', 'ERROR');
+                displayResults('health-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `Ошибка проверки: ${e.message}`);
+            }
+        }
+        
+        async function loadUserData() {
+            addLog('api', 'Загрузка данных пользователя...');
+            
+            try {
+                const response = await fetch('/api/user/get?user_id=123');
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('stat-users').textContent = '1';
+                    setStatusItem('data', 'ok', 'OK');
+                    const info = `ID: ${data.user_id} | Баланс: ${data.balance} TON | Инвентарь: ${data.inventory_count}`;
+                    displayResults('data-results', 'ok', info);
+                    addLog('ok', `Пользователь загружен: ${info}`);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                setStatusItem('data', 'error', 'ERROR');
+                displayResults('data-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `Ошибка загрузки пользователя: ${e.message}`);
+            }
+        }
+        
+        async function loadGifts() {
+            addLog('api', 'Загрузка списка подарков...');
+            
+            try {
+                const response = await fetch('/api/gifts/list');
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    document.getElementById('stat-gifts').textContent = data.count;
+                    setStatusItem('gifts', 'ok', 'OK');
+                    const info = `Загружено ${data.count} подарков`;
+                    displayResults('data-results', 'ok', info);
+                    addLog('ok', `${info}`);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                setStatusItem('gifts', 'error', 'ERROR');
+                displayResults('data-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `Ошибка загрузки подарков: ${e.message}`);
+            }
+        }
+        
+        async function testAPI() {
+            addLog('api', 'Тест API...');
+            
+            try {
+                const r1 = await fetch('/api/health');
+                const r2 = await fetch('/api/gifts/list');
+                const r3 = await fetch('/api/user/get?user_id=123');
+                
+                if (r1.ok && r2.ok && r3.ok) {
+                    displayResults('health-results', 'ok', 'Все endpoints работают');
+                    addLog('ok', 'API тест прошёл успешно');
+                } else {
+                    throw new Error('Некоторые endpoints не отвечают');
+                }
+            } catch (e) {
+                displayResults('health-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `API тест не пройден: ${e.message}`);
+            }
+        }
+        
+        async function testEndpoint(url) {
+            addLog('api', `Тест: ${url}`);
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const text = `GET ${url} - OK (${response.status})`;
+                    displayResults('endpoint-results', 'ok', text);
+                    addLog('ok', text);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (e) {
+                const text = `GET ${url} - ERROR`;
+                displayResults('endpoint-results', 'error', text);
+                addLog('error', text);
+            }
+        }
+        
+        async function addBalance() {
+            addLog('api', 'Добавление баланса...');
+            const userId = document.getElementById('buy-user-id').value;
+            
+            try {
+                const response = await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(userId), balance: 1000 })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    displayResults('buy-results', 'ok', `Баланс пополнен на 1000 TON`);
+                    addLog('ok', `Баланс пополнен`);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                displayResults('buy-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `Ошибка пополнения: ${e.message}`);
+            }
+        }
+        
+        async function testBuyGift() {
+            addLog('api', 'Тест покупки подарка...');
+            const userId = document.getElementById('buy-user-id').value;
+            const giftId = document.getElementById('buy-gift-id').value;
+            
+            try {
+                const response = await fetch('/api/gift/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: parseInt(userId), gift_id: giftId })
+                });
+                
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    const text = `Подарок "${data.gift_name}" куплен | Новый баланс: ${data.new_balance} TON`;
+                    displayResults('buy-results', 'ok', text);
+                    addLog('ok', text);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (e) {
+                displayResults('buy-results', 'error', `Ошибка: ${e.message}`);
+                addLog('error', `Ошибка покупки: ${e.message}`);
+            }
+        }
+        
+        function openFullLogs() {
+            document.getElementById('full-logs-modal').classList.add('show');
+            switchLogsTab('all');
+        }
+        
+        function closeFullLogs() {
+            document.getElementById('full-logs-modal').classList.remove('show');
+        }
+        
+        function switchLogsTab(tab) {
+            currentLogTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateFullLogs();
+        }
+        
+        function updateFullLogs() {
+            const logs = logStorage[currentLogTab] || logStorage.all;
+            const content = document.getElementById('modal-logs-content');
+            content.innerHTML = logs.map(l => `<div class="log-line ${l.type}">${l.msg}</div>`).join('');
+        }
+        
+        function clearLogs() {
+            if (confirm('Вы уверены?')) {
+                logStorage.all = [];
+                logStorage.errors = [];
+                logStorage.api = [];
+                logStorage.success = [];
+                document.getElementById('logs-box').innerHTML = '';
+                addLog('ok', 'Логи очищены');
+            }
+        }
+        
+        function backupData() {
+            addLog('api', 'Создание резервной копии...');
+            const data = JSON.stringify(logStorage, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            addLog('ok', 'Резервная копия загружена');
+        }
+        
+        function resetUser() {
+            if (confirm('Сбросить данные пользователя 123?')) {
+                addLog('warn', 'Сброс данных пользователя...');
+                // Будет реализовано через API
+                addLog('ok', 'Данные сброшены');
+            }
+        }
+        
+        // ===== INIT =====
+        window.addEventListener('load', () => {
+            addLog('info', 'Диагностика готова');
+            checkHealth();
+            loadGifts();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+name: 🚀 Auto Deploy to PythonAnywhere
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 📋 Информация о деплое
+      run: |
+        echo "🚀 Начинается развёртывание на PythonAnywhere"
+        echo "📅 Время: $(date)"
+        echo "📝 Коммит: ${{ github.sha }}"
+    
+    - name: 🔐 Добавление SSH ключа
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.PYTHONANYWHERE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H rpsgames.pythonanywhere.com >> ~/.ssh/known_hosts 2>/dev/null
+    
+    - name: 🔄 Обновление кода на сервере
+      run: |
+        ssh -i ~/.ssh/id_rsa rpsgames@rpsgames.pythonanywhere.com << 'EOF'
+        cd ~/mysite
+        git pull origin main
+        pip install -r requirements.txt --user
+        touch /var/www/rpsgames_pythonanywhere_com_wsgi.py
+        echo "✅ Деплой успешно завершён!"
+        EOF
+    
+    - name: ✅ Успех
+      run: echo "🎉 Приложение обновлено и перезагружено!"

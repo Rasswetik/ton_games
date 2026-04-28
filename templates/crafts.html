@@ -1,81 +1,462 @@
-<!DOCTYPE html>
-<html lang="ru">
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Крафты</title>
+    <title data-i18n="title_crafts">Crafts</title>
+    <script>
+        try {
+            const raw = localStorage.getItem('rps_settings');
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && s.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        } catch (e) { }
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="{{ url_for('static', filename='vendor/tonconnect-ui.min.js') }}"></script>
+    <style>
+        .top-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+            background: var(--card); border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 16px; z-index: 60; box-sizing: border-box;
+            color: var(--text);
+        }
+        
+        .header-user-info {
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .header-avatar-container {
+            width: 32px; height: 32px;
+        }
+        
+        .header-avatar {
+            width: 100%; height: 100%;
+        }
+        
+        .header-username {
+            font-size: 14px; font-weight: 500; color: var(--text);
+        }
+        
+        * { box-sizing: border-box; }
+        
+        .app-content {
+            padding-top: 70px; padding-bottom: 80px;
+        }
+        
+        #craft-inventory {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);  /* 2 columns on mobile */
+            gap: 10px;
+            min-height: 150px;
+            padding: 10px;
+            background: var(--card);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        
+        .craft-slots-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 columns on mobile */
+            gap: 8px;
+            padding: 12px;
+            background: var(--card);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        
+        @media (min-width: 600px) {
+            #craft-inventory { grid-template-columns: repeat(3, 1fr); }
+            .craft-slots-container { grid-template-columns: repeat(5, 1fr); }
+        }
+
+        @media (min-width: 1024px) {
+            #craft-inventory { grid-template-columns: repeat(5, 1fr); }
+            .craft-slots-container { grid-template-columns: repeat(5, 1fr); }
+        }
+        
+        .craft-slot {
+            aspect-ratio: 1; border: 2px dashed var(--border); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--card); cursor: pointer; overflow: hidden;
+            transition: all 0.2s; min-height: 90px; max-height: 120px;
+            color: var(--text);
+        }
+        
+        .craft-slot:hover {
+            border-color: var(--primary); background: var(--bg);
+        }
+        
+        .craft-slot img {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+        
+        .craft-info {
+            text-align: center; margin-bottom: 15px; font-size: 14px;
+            font-weight: 600; color: var(--text); padding: 12px;
+            background: transparent; border-radius: 8px;
+        }
+        
+        .btn-craft {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: all 0.3s; margin: 12px 0;
+        }
+        
+        .btn-craft:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+        
+        .btn-craft:not(:disabled):active {
+            transform: scale(0.98);
+        }
+        
+        .inventory-item {
+            position: relative;
+            border: 1px solid var(--border); border-radius: 10px;
+            padding: 10px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: var(--card);
+            color: var(--text);
+        }
+        
+        .inventory-item:active {
+            transform: scale(0.95);
+        }
+        
+        .inventory-item img {
+            width: 100%; height: 100px; object-fit: contain; margin-bottom: 8px;
+        }
+        
+        .inventory-item-name {
+            font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; line-height: 1.2;
+        }
+        
+        .inventory-item-price {
+            font-size: 13px; color: var(--primary); font-weight: bold;
+        }
+        
+        .win-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;
+            z-index: 200; padding: 20px;
+        }
+        
+        .win-overlay.active {
+            display: flex;
+        }
+        
+        .win-card {
+            background: var(--card); border-radius: 20px; padding: 30px;
+            max-width: 350px; text-align: center; animation: slideUp 0.4s ease-out;
+            width: 100%; color: var(--text);
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .craft-animating .craft-slot {
+            animation: pulse 0.6s ease-in-out infinite;
+        }
+        
+        .win-title {
+            font-size: 28px; font-weight: 700; color: var(--primary);
+            margin: 0 0 20px 0; animation: float 2s ease-in-out infinite;
+        }
+        
+        .win-image {
+            width: 140px; height: 140px; object-fit: contain;
+            margin: 0 auto 20px; display: block; animation: float 2.5s ease-in-out infinite;
+        }
+        
+        .win-gift-name {
+            font-size: 18px; font-weight: 700; color: var(--text); margin: 0 0 15px 0;
+        }
+        
+        .win-gift-price {
+            font-size: 20px; color: var(--primary); font-weight: bold;
+            margin-bottom: 25px;
+        }
+        
+        .win-buttons {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .win-btn {
+            padding: 12px; border: none; border-radius: 10px;
+            font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s;
+        }
+        
+        .win-btn.sell {
+            background: var(--primary); color: white;
+        }
+        
+        .win-btn.continue {
+            background: var(--card); color: var(--text);
+        }
+        
+        .win-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .empty-inventory {
+            text-align: center; padding: 40px 20px; grid-column: 1/-1; color: var(--text-light);
+        }
+
+        .empty-inventory img {
+            width: 80px; height: 80px; margin-bottom: 12px;
+        }
+        /* Inventory group modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 300; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--card); color: var(--text); border-radius: 12px; padding: 16px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: auto; max-height: 80vh; }
+        .inventory-badge { position: absolute; top: 8px; right: 8px; background: var(--primary); color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- TOP HEADER -->
-        <div class="top-header">
-            <div class="header-user-info">
-                <div class="header-avatar-container">
-                    <svg id="header-avatar-svg" class="header-avatar" viewBox="0 0 24 24" fill="none" stroke="#0088cc" stroke-width="1.5">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <img id="header-avatar-img" class="header-avatar" src="" style="display: none;">
-                </div>
-                <span id="header-username" class="header-username">Пользователь</span>
+    <!-- TOP HEADER -->
+    <div class="top-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="header-user-info" style="display: flex; align-items: center; gap: 8px;">
+            <div class="header-avatar-container" style="width: 32px; height: 32px;">
+                <svg id="header-avatar-svg" style="width: 100%; height: 100%; color: var(--primary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <img id="header-avatar-img" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
             </div>
+            <span id="header-username" style="font-size: 14px; font-weight: 500; color: var(--text);">User</span>
         </div>
-
-        <main class="crafts-container" style="margin-top: 80px; margin-bottom: 80px; padding: 15px;">
+        <div style="display: flex; gap: 12px; align-items: center; margin-left: auto;">
+                <div style="text-align: right;">
+                <div style="font-size: 12px; color: var(--text-light);">Balance</div>
+                <div style="font-size: 18px; font-weight: bold; color: var(--primary);" id="header-balance">0.00 TON</div>
+            </div>
+            <button onclick="openTopupModal()" style="background: var(--primary); color: white; border: none; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; font-weight: bold;">+</button>
+        </div>
+    </div>
+    
+    <div class="app-content" style="overflow-y: auto;">
+        <main class="crafts-container" style="margin: 0; padding: 15px; overflow: visible;">
             <div style="text-align: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #222;">Крафтинг</h2>
-                <p style="color: #999; margin: 5px 0 0 0;">Комбинируйте предметы для новых подарков</p>
+                <h2 data-i18n="crafting_title" style="margin: 0; color: var(--text);">Crafting</h2>
+                <p data-i18n="crafting_desc" style="color: var(--text-light); margin: 5px 0 0 0;">Combine 3-10 items to create a new gift</p>
             </div>
 
-            <div class="craft-slots" id="craft-slots">
+            <!-- Craft Slots -->
+            <div class="craft-slots-container" id="craft-slots-container">
                 <div class="craft-slot" id="slot-1"></div>
                 <div class="craft-slot" id="slot-2"></div>
                 <div class="craft-slot" id="slot-3"></div>
+                <div class="craft-slot" id="slot-4"></div>
+                <div class="craft-slot" id="slot-5"></div>
+                <div class="craft-slot" id="slot-6"></div>
+                <div class="craft-slot" id="slot-7"></div>
+                <div class="craft-slot" id="slot-8"></div>
+                <div class="craft-slot" id="slot-9"></div>
+                <div class="craft-slot" id="slot-10"></div>
             </div>
 
-            <div class="craft-info" id="craft-info">
-                Добавьте предметы (0/3)
-            </div>
+            <div class="craft-info" id="craft-info">Selected: 0 items</div>
             
-            <button class="btn-craft" id="craft-btn" disabled onclick="doCraft()" style="margin: 15px 0;">КРАФТ</button>
+            <button class="btn-craft" id="craft-btn" disabled onclick="doCraft()" data-i18n="craft_button">CRAFT</button>
 
-            <h3 style="margin: 25px 0 15px 0; font-weight: 700; color: #222;">Ваш инвентарь</h3>
-            <div id="craft-inventory" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+            <h3 style="margin: 25px 0 15px 0; font-weight: 700; color: var(--text);" data-i18n="your_inventory">Your Inventory</h3>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+                <input id="search-inventory" type="text" data-i18n-placeholder="search_inventory_placeholder" placeholder="Search inventory..." 
+                       style="flex:1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);"
+                       oninput="filterInventory()">
+            </div>
+            <div id="craft-inventory" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
         </main>
 
-        <nav class="bottom-nav">
-            <a href="{{ url_for('index') }}" class="nav-item">
-                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-                <span>Главная</span>
-            </a>
-            <a href="{{ url_for('market') }}" class="nav-item">
-                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
-                <span>Маркет</span>
-            </a>
-            <a href="{{ url_for('crafts') }}" class="nav-item active">
-                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                <span>Крафты</span>
-            </a>
-            <a href="{{ url_for('profile') }}" class="nav-item">
-                <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span>Профиль</span>
-            </a>
-        </nav>
+        <!-- Win Screen -->
+        <div class="win-overlay" id="win-overlay">
+            <div class="win-card">
+                <h2 class="win-title" data-i18n="win_title">Congratulations!</h2>
+                <img id="win-image" class="win-image" src="">
+                <p class="win-gift-name" id="win-gift-name"></p>
+                <p class="win-gift-price" id="win-gift-price"></p>
+                <div class="win-buttons">
+                    <button class="win-btn sell" onclick="sellCraftedGift()" data-i18n="sell">Sell</button>
+                    <button class="win-btn continue" onclick="closeCraftWin()" data-i18n="continue">Continue</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
-    <script>
-        let currentUserId = null;
-        let selectedItems = [];
+    <nav class="bottom-nav">
+        <a href="{{ url_for('index') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+        </a>
+        <a href="{{ url_for('market') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><path d="M3 9H21L19 20H5L3 9Z"></path><path d="M8 9V6C8 4.34315 9.34315 3 11 3H13C14.6569 3 16 4.34315 16 6V9"></path></svg>
+        </a>
+        <a href="{{ url_for('crafts') }}" class="nav-item active">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        </a>
+        <a href="{{ url_for('profile') }}" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        </a>
+        <a href="/inventory" class="nav-item">
+            <svg class="nav-svg" viewBox="0 0 24 24" stroke-width="2" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" ry="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><circle cx="8" cy="14" r="1.5"></circle><circle cx="16" cy="14" r="1.5"></circle></svg>
+        </a>
+    </nav>
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const tg = window.Telegram.WebApp;
-            const tgUser = tg.initDataUnsafe?.user;
+    <!-- Inventory group modal -->
+    <div id="inventory-group-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <h3 id="group-modal-title" style="margin:0;font-size:16px;">Items</h3>
+                <button class="modal-close" onclick="closeGroupModal()">×</button>
+            </div>
+            <div id="group-list" style="margin-top:12px;max-height:60vh;overflow:auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        function initTelegram() {
+            if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
+                console.warn('[WARN] Telegram WebApp not available');
+                return null;
+            }
             
-            if (tgUser) {
+            tg = window.Telegram.WebApp;
+            try {
+                tg.expand();
+                tg.ready();
+                console.log('[OK] Telegram initialized');
+                return tg;
+            } catch (e) {
+                console.error('[ERROR] Telegram init error:', e);
+                return null;
+            }
+        }
+        
+        const GIFT_GIF_URL = '{{ url_for("static", filename="gifs/gift.gif") }}';
+        
+        let currentUserId = null;
+        let tonConnectUI = null;
+        let selectedItems = [];
+        let allGifts = [];
+        let currentCraftedGift = null;
+        let pendingWithdrawalGifts = [];  // legacy list of pending gift ids
+        let pendingWithdrawalRequests = []; // detailed pending requests
+        let pendingByIndex = new Set();
+        let pendingByGiftId = new Set();
+
+        async function loadPendingWithdrawals() {
+            if (!currentUserId) return;
+            
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/user/pending-withdrawals?user_id=${currentUserId}&t=${timestamp}`);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    // Prefer detailed pending requests
+                    pendingWithdrawalRequests = data.pending_requests || [];
+                    pendingWithdrawalGifts = (data.pending_gift_ids || pendingWithdrawalRequests.map(r => r.gift_id)).map(id => String(id));
+
+                    // Build lookup sets
+                    pendingByIndex = new Set();
+                    pendingByGiftId = new Set();
+                    pendingWithdrawalRequests.forEach(r => {
+                        if (r.inventory_index !== null && r.inventory_index !== undefined) pendingByIndex.add(String(r.inventory_index));
+                        if (r.gift_id) pendingByGiftId.add(String(r.gift_id));
+                    });
+
+                    // Fallback: if only gift ids provided, populate pendingByGiftId
+                    if (pendingByGiftId.size === 0 && Array.isArray(data.pending_gift_ids)) {
+                        data.pending_gift_ids.forEach(id => pendingByGiftId.add(String(id)));
+                    }
+
+                    console.log('[CRAFTS] Loaded pending withdrawals:', { pendingWithdrawalRequests, pendingWithdrawalGifts });
+                }
+            } catch (error) {
+                console.error('[CRAFTS] Error loading pending withdrawals:', error);
+            }
+        }
+
+        function updateInventoryUI() {
+            // Update visual state of inventory items based on pending withdrawals and current selection
+            const inventoryItems = document.querySelectorAll('.inventory-item');
+            const groups = window.inventoryGroups || {};
+
+            inventoryItems.forEach((item) => {
+                const gid = item.getAttribute('data-gift-id');
+                if (!gid) return;
+
+                const group = groups[gid] || [];
+
+                // Count available instances: not pending and not selected
+                let availableCount = 0;
+                group.forEach(inst => {
+                    const instIndexStr = String(inst.index);
+                    const isPending = pendingByIndex.has(instIndexStr);
+                    const isSelected = selectedItems.some(s => s.inventoryIndex === inst.index);
+                    if (!isPending && !isSelected) availableCount++;
+                });
+
+                // Update badge if present
+                const badge = item.querySelector('.inventory-badge');
+                if (badge) badge.textContent = 'x' + availableCount;
+
+                if (availableCount === 0) {
+                    item.style.opacity = '0.4';
+                    item.style.pointerEvents = 'none';
+                    item.style.cursor = 'not-allowed';
+                    item.title = 'No available instances (pending withdrawal)';
+                } else {
+                    item.style.opacity = '1';
+                    item.style.pointerEvents = 'auto';
+                    item.style.cursor = 'pointer';
+                    item.title = '';
+                }
+            });
+        }
+        
+        async function loadBalance() {
+            if (!currentUserId) return;
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/user/get?user_id=${currentUserId}&t=${timestamp}`);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    document.getElementById('header-balance').textContent = (data.balance || 0).toFixed(2) + ' TON';
+                }
+            } catch (e) {
+                console.error('Error:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTelegram();
+            
+            const tgUser = tg?.initDataUnsafe?.user;
+            console.log('[CRAFTS] tgUser:', tgUser);
+            
+            if (tgUser && tgUser.id) {
                 currentUserId = tgUser.id;
+                console.log('[CRAFTS] Telegram mode: currentUserId set to:', currentUserId);
+                
                 const userName = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
                 document.getElementById('header-username').textContent = userName;
                 
@@ -84,59 +465,397 @@
                     document.getElementById('header-avatar-img').style.display = 'block';
                     document.getElementById('header-avatar-svg').style.display = 'none';
                 }
+            } else {
+                currentUserId = 123;
+                console.log('[CRAFTS] Fallback mode: Test user 123');
+                document.getElementById('header-username').textContent = 'Test User';
             }
             
-            loadInventory();
+            console.log('[CRAFTS] Loading gifts...');
+            await loadGifts();
+            console.log('[CRAFTS] Gifts loaded, allGifts count:', allGifts.length);
+            
+            console.log('[CRAFTS] Loading inventory...');
+            await loadInventory();
+            console.log('[CRAFTS] Inventory loaded');
+            
+            console.log('[CRAFTS] Loading pending withdrawals...');
+            await loadPendingWithdrawals();
+            console.log('[CRAFTS] Pending withdrawals loaded');
+            
+            console.log('[CRAFTS] Loading balance...');
+            await loadBalance();
+            console.log('[CRAFTS] Balance loaded');
+            
+            // Reload pending withdrawals every 3 seconds and update inventory UI
+            setInterval(async () => {
+                await loadPendingWithdrawals();
+                updateInventoryUI();
+            }, 3000);
+            
+            setInterval(loadBalance, 5000);
         });
 
-        async function loadInventory() {
+        async function loadGifts() {
             try {
-                const response = await fetch(`/api/user/get?user_id=${currentUserId}`);
+                console.log('[GIFTS] Starting loadGifts...');
+                const timestamp = new Date().getTime();
+                const response = await fetch('/api/gifts/list?t=' + timestamp);
+                console.log('[GIFTS] Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.status === 'ok' && data.gifts) {
+                    allGifts = data.gifts;
+                    console.log('[GIFTS] ✅ Loaded', allGifts.length, 'gifts');
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (e) {
+                console.error('[GIFTS] ❌ Error:', e);
+                allGifts = [];
+            }
+        }
+
+        async function loadInventory() {
+            console.log('[INVENTORY] Starting loadInventory, currentUserId:', currentUserId);
+            
+            if (!currentUserId) {
+                console.error('[INVENTORY] No currentUserId');
+                return;
+            }
+
+            // Ensure we know which gifts are pending withdrawals so we can hide them from the crafts page
+            await loadPendingWithdrawals();
+            
+            if (allGifts.length === 0) {
+                console.warn('[INVENTORY] allGifts is empty, reloading...');
+                await loadGifts();
+            }
+            
+            try {
+                const timestamp = new Date().getTime();
+                const url = `/api/user/get?user_id=${currentUserId}&t=${timestamp}`;
+                console.log('[INVENTORY] Fetching from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
                 const data = await response.json();
                 
                 if (data.status === 'ok' && data.inventory) {
                     const container = document.getElementById('craft-inventory');
+                    if (!container) return;
+                    
                     container.innerHTML = '';
                     
-                    fetch('/static/data/gifts.json')
-                        .then(r => r.json())
-                        .then(gifts => {
-                            data.inventory.forEach(giftId => {
-                                const gift = gifts.find(g => g.id === giftId);
-                                if (gift) {
-                                    const div = document.createElement('div');
-                                    div.className = 'craft-item';
-                                    div.innerHTML = `<img src="/static/img/gifts/${gift.image}" alt="${gift.name}">`;
-                                    div.onclick = () => selectItem(gift);
-                                    container.appendChild(div);
-                                }
-                            });
-                        });
+                    if (data.inventory.length === 0) {
+                        container.innerHTML = `<div class="empty-inventory" style="grid-column: 1/-1;"><img src="${GIFT_GIF_URL}"><p class="empty-text" data-i18n="empty_inventory">Inventory is empty</p></div>`;
+                        return;
+                    }
+                    
+                    // Group inventory by gift id so duplicates are aggregated
+                    const instances = [];
+                    data.inventory.forEach((giftItem, index) => {
+                        const giftId = typeof giftItem === 'string' ? giftItem : giftItem.id;
+                        const gift = allGifts.find(g => g.id === giftId);
+                        if (!gift) return;
+
+                        // Skip only specific instances that have pending withdrawal requests (instance-level)
+                        if (pendingByIndex.size > 0) {
+                            if (pendingByIndex.has(String(index))) {
+                                console.log('[INVENTORY] Skipping pending instance:', giftId, 'index', index);
+                                return;
+                            }
+                        } else {
+                            // Fallback: if we only know gift-level pending ids, skip entire type
+                            if (pendingByGiftId.has(String(giftId))) {
+                                console.log('[INVENTORY] Skipping pending withdrawal gift type (fallback):', giftId);
+                                return;
+                            }
+                        }
+
+                        instances.push({ giftId, gift, index });
+                    });
+
+                    // Build groups map: giftId -> array of instances
+                    const groups = {};
+                    instances.forEach(inst => {
+                        if (!groups[inst.giftId]) groups[inst.giftId] = [];
+                        groups[inst.giftId].push(inst);
+                    });
+
+                    // Expose groups globally for modal/detail view
+                    window.inventoryGroups = groups;
+
+                    // Render aggregated cards (counts reflect only available, non-pending instances)
+                    Object.keys(groups).forEach(gid => {
+                        const group = groups[gid];
+                        const gift = group[0].gift;
+                        const count = group.length;
+
+                        // Count how many instances of this group are still available (non-pending)
+                        let availableCount = 0;
+                        group.forEach(inst => { if (!pendingByIndex.has(String(inst.index))) availableCount++; });
+
+                        const div = document.createElement('div');
+                        div.className = 'inventory-item inventory-group';
+                        div.setAttribute('data-gift-id', gid);
+                        div.setAttribute('data-gift-name', gift.name);
+                        div.setAttribute('data-gift-count', String(availableCount));
+
+                        let imgSrc = gift.image;
+                        if (!imgSrc.startsWith('/')) imgSrc = '/static/img/gifts/' + imgSrc;
+
+                        div.innerHTML = `
+                            <img src="${imgSrc}" alt="${gift.name}" onerror="this.src='/static/img/default.png'">
+                            <div class="inventory-item-name">${gift.name}</div>
+                            <div class="inventory-item-price">${gift.price.toFixed(2)} TON</div>
+                            <div class="inventory-badge">x${availableCount}</div>
+                        `;
+
+                        // Open expanded list of instances
+                        div.onclick = () => showGroupList(gid);
+                        container.appendChild(div);
+                    });
+                    
+                    console.log('[INVENTORY] ✅ Loaded');
+                    
+                    // Apply pending withdrawal visual state
+                    updateInventoryUI();
+                    // Re-apply language translations for dynamically created elements
+                    if (typeof applyLanguage === 'function') applyLanguage(document.documentElement.lang || 'ru');
                 }
             } catch (e) {
-                console.error('Error loading inventory:', e);
+                console.error('[INVENTORY] ❌ Error:', e);
             }
         }
 
-        function selectItem(gift) {
-            if (selectedItems.length < 3) {
-                selectedItems.push(gift);
+        function selectItem(gift, inventoryIndex) {
+            // Instance-level pending checks
+            if (inventoryIndex !== undefined && inventoryIndex !== null) {
+                if (pendingByIndex.has(String(inventoryIndex))) {
+                    if (typeof showToast === 'function') showToast('Cannot use: this instance has a pending withdrawal request', 'warning'); else alert('Cannot use: this instance has a pending withdrawal request');
+                    return;
+                }
+            } else if (pendingByGiftId.has(String(gift.id))) {
+                if (typeof showToast === 'function') showToast('Cannot use: this gift has a pending withdrawal request', 'warning'); else alert('Cannot use: this gift has a pending withdrawal request');
+                return;
+            }
+
+            if (selectedItems.length < 10) {
+                selectedItems.push({ gift, inventoryIndex });
                 updateSlots();
             }
         }
 
+        // Show list of individual instances for a grouped gift
+        function showGroupList(giftId) {
+            const groups = window.inventoryGroups || {};
+            const group = groups[giftId];
+            if (!group || group.length === 0) return;
+
+
+            const gift = group[0].gift;
+            document.getElementById('group-modal-title').textContent = `${gift.name} (${group.length})`;
+            const list = document.getElementById('group-list');
+            list.innerHTML = '';
+
+            // Compute how many instances are available (not pending and not selected)
+            const availableCount = group.reduce((acc, inst) => {
+                const isPending = pendingByIndex.has(String(inst.index));
+                const isSelected = selectedItems.some(s => s.inventoryIndex === inst.index);
+                if (!isPending && !isSelected) return acc + 1;
+                return acc;
+            }, 0);
+
+            // If nothing is available to choose (all selected or pending), show a helpful message
+                if (availableCount === 0) {
+                    // Still show any pending items as disabled so the user understands the state
+                    let pendingShown = false;
+                    group.forEach(inst => {
+                        const isPending = pendingByIndex.has(String(inst.index));
+                        const isSelected = selectedItems.some(s => s.inventoryIndex === inst.index);
+                        if (isPending) {
+                        pendingShown = true;
+                        const itemEl = document.createElement('div');
+                        itemEl.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid var(--border);';
+                        let img = gift.image;
+                        if (!img.startsWith('/')) img = '/static/img/gifts/' + img;
+                        const pendingLabelText = (typeof t === 'function') ? t('pending_withdrawal') : 'Pending';
+                        itemEl.innerHTML = `<img src="${img}" style="width:42px;height:42px;object-fit:contain;filter:grayscale(100%) opacity(0.6);" onerror="this.src='/static/img/default.png'">` +
+                            `<div style="flex:1;"><div style="font-weight:600;color:var(--text)">${gift.name}</div><div style="font-size:12px;color:var(--text-light)">${gift.price.toFixed(2)} TON</div></div>` +
+                            `<div style="font-size:12px;color:var(--text-light);font-weight:700;">${pendingLabelText}</div>`;
+                        itemEl.style.cursor = 'not-allowed';
+                        list.appendChild(itemEl);
+                    }
+                });
+
+                if (!pendingShown) {
+                    const msg = (typeof t === 'function') ? t('pending_withdrawal') : 'No available instances (selected or pending)';
+                    list.innerHTML = `<div style="padding:12px;color:var(--text-light);text-align:center">${msg}</div>`;
+                }
+
+                document.getElementById('inventory-group-modal').classList.add('active');
+                return;
+            }
+
+            // Render only available and pending items; skip those already selected (they should disappear)
+            group.forEach(inst => {
+                const isPending = pendingByIndex.has(String(inst.index));
+                const isSelected = selectedItems.some(s => s.inventoryIndex === inst.index);
+                if (isSelected) return; // Hide selected instances from the list
+
+                const itemEl = document.createElement('div');
+                itemEl.style.cssText = 'display:flex;align-items:center;gap:12px;padding:8px;border-bottom:1px solid var(--border);';
+                let img = gift.image;
+                if (!img.startsWith('/')) img = '/static/img/gifts/' + img;
+
+                    if (isPending) {
+                    // Render pending (greyed, not clickable) with label "В ожидании"
+                    const pendingLabel = (typeof t === 'function') ? t('pending_withdrawal') : 'Pending';
+                    itemEl.innerHTML = `<img src="${img}" style="width:42px;height:42px;object-fit:contain;filter:grayscale(100%) opacity(0.6);" onerror="this.src='/static/img/default.png'">` +
+                        `<div style="flex:1;"><div style="font-weight:600;color:var(--text)">${gift.name}</div><div style="font-size:12px;color:var(--text-light)">${gift.price.toFixed(2)} TON</div></div>` +
+                        `<div style="font-size:12px;color:var(--text-light);font-weight:700;">${pendingLabel}</div>`;
+                    itemEl.style.cursor = 'not-allowed';
+                } else {
+                    itemEl.style.cursor = 'pointer';
+                    itemEl.innerHTML = `<img src="${img}" style="width:42px;height:42px;object-fit:contain;" onerror="this.src='/static/img/default.png'">` +
+                        `<div style="flex:1;"><div style="font-weight:600;color:var(--text)">${gift.name}</div><div style="font-size:12px;color:var(--text-light)">${gift.price.toFixed(2)} TON</div></div>` +
+                        `<div style="font-size:12px;color:var(--text-light)">#${inst.index + 1}</div>`;
+
+                    itemEl.onclick = () => { closeGroupModal(); selectItem(gift, inst.index); };
+                }
+
+                list.appendChild(itemEl);
+            });
+
+            document.getElementById('inventory-group-modal').classList.add('active');
+        }
+
+        function closeGroupModal() {
+            const modal = document.getElementById('inventory-group-modal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        
+
+        function filterInventory() {
+            const q = (document.getElementById('search-inventory').value || '').toLowerCase().trim();
+            document.querySelectorAll('.inventory-group').forEach(card => {
+                const name = (card.getAttribute('data-gift-name') || '').toLowerCase();
+                if (name.includes(q)) card.style.display = '';
+                else card.style.display = 'none';
+            });
+        }
+
         function updateSlots() {
-            selectedItems.forEach((item, index) => {
-                const slot = document.getElementById(`slot-${index + 1}`);
-                slot.innerHTML = `<img src="/static/img/gifts/${item.image}" alt="${item.name}" onclick="removeItem(${index})">`;
+            // Render selected items into craft slots
+            selectedItems.forEach((item, slotIndex) => {
+                const slot = document.getElementById(`slot-${slotIndex + 1}`);
+                slot.style.opacity = '1';
+                slot.style.transform = 'scale(1)';
+                slot.style.transition = '';
+                
+                let imgSrc = item.gift.image;
+                if (!imgSrc.startsWith('/')) {
+                    imgSrc = '/static/img/gifts/' + imgSrc;
+                }
+                slot.innerHTML = `<img src="${imgSrc}" alt="${item.gift.name}" style="cursor: pointer; border-radius: 6px;" onclick="removeItem(${slotIndex})" onerror="this.src='/static/img/default.png'">`;
+            });
+
+            // Clear remaining slots
+            for (let i = selectedItems.length; i < 10; i++) {
+                const slot = document.getElementById(`slot-${i + 1}`);
+                slot.style.opacity = '1';
+                slot.style.transform = 'scale(1)';
+                slot.style.transition = '';
+                slot.innerHTML = '';
+            }
+
+            // Update aggregated group badges and availability based on pending + selected instances
+            const inventoryItems = document.querySelectorAll('.inventory-item');
+            const groups = window.inventoryGroups || {};
+
+            inventoryItems.forEach((item) => {
+                // Group card (aggregated)
+                if (item.classList.contains('inventory-group')) {
+                    const gid = item.getAttribute('data-gift-id');
+                    const group = groups[gid] || [];
+
+                    // Count available instances: not pending and not already selected
+                    let availableCount = 0;
+                    group.forEach(inst => {
+                        const instIndexStr = String(inst.index);
+                        const isPending = pendingByIndex.has(instIndexStr);
+                        const isSelected = selectedItems.some(s => s.inventoryIndex === inst.index);
+                        if (!isPending && !isSelected) availableCount++;
+                    });
+
+                    // Update badge if present
+                    const badge = item.querySelector('.inventory-badge');
+                    if (badge) badge.textContent = 'x' + availableCount;
+
+                    if (availableCount === 0) {
+                        item.style.opacity = '0.4';
+                        item.style.pointerEvents = 'none';
+                        item.style.cursor = 'not-allowed';
+                    } else {
+                        item.style.opacity = '1';
+                        item.style.pointerEvents = 'auto';
+                        item.style.cursor = 'pointer';
+                    }
+
+                } else {
+                    // Non-aggregated individual item fallback
+                    const giftIndexAttr = item.getAttribute('data-gift-index');
+                    if (!giftIndexAttr) return;
+                    const giftIndex = parseInt(giftIndexAttr, 10);
+                    if (isNaN(giftIndex)) return;
+
+                    const isPending = pendingByIndex.has(String(giftIndex));
+                    const isSelected = selectedItems.some(s => s.inventoryIndex === giftIndex);
+
+                    if (isPending || isSelected) {
+                        item.style.opacity = '0.4';
+                        item.style.pointerEvents = 'none';
+                        item.style.cursor = 'not-allowed';
+                    } else {
+                        item.style.opacity = '1';
+                        item.style.pointerEvents = 'auto';
+                        item.style.cursor = 'pointer';
+                    }
+                }
             });
             
-            for (let i = selectedItems.length; i < 3; i++) {
-                document.getElementById(`slot-${i + 1}`).innerHTML = '';
+            const count = selectedItems.length;
+            const btn = document.getElementById('craft-btn');
+
+            if (count >= 3 && count <= 10) {
+                const totalPrice = selectedItems.reduce((sum, item) => sum + item.gift.price, 0);
+                const minReward = Math.round(totalPrice * 0.2);
+                const maxReward = Math.round(totalPrice * 4);
+
+                // Top area: show reward range; Button: show total sum
+                if (typeof t === 'function') {
+                    document.getElementById('craft-info').textContent = t('selected_items_reward', { count, min: minReward.toFixed(2), max: maxReward.toFixed(2) });
+                    btn.textContent = `${t('craft_button')} (${totalPrice.toFixed(2)} TON)`;
+                } else {
+                    document.getElementById('craft-info').textContent = `Selected: ${count} items | Reward: ${minReward.toFixed(2)} - ${maxReward.toFixed(2)} TON`;
+                    btn.textContent = `CRAFT (${totalPrice.toFixed(2)} TON)`;
+                }
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            } else {
+                if (typeof t === 'function') document.getElementById('craft-info').textContent = t('selected_items_summary', { count });
+                else document.getElementById('craft-info').textContent = `Selected: ${count} items (3-10 required)`;
+                btn.textContent = (typeof t === 'function') ? t('craft_button') : 'CRAFT';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
             }
-            
-            document.getElementById('craft-info').textContent = `Выбрано предметов (${selectedItems.length}/3)`;
-            document.getElementById('craft-btn').disabled = selectedItems.length !== 3;
         }
 
         function removeItem(index) {
@@ -144,13 +863,46 @@
             updateSlots();
         }
 
-        async function doCraft() {
-            if (selectedItems.length !== 3) return;
+        async function animateSlotsDissapearing() {
+            const slots = Array.from(document.querySelectorAll('.craft-slot'));
+            const filledSlots = slots.filter((slot, i) => i < selectedItems.length);
             
-            const itemIds = selectedItems.map(item => item.id);
+            // Animate each item disappearing one by one
+            for (let i = 0; i < filledSlots.length; i++) {
+                const slot = filledSlots[i];
+                slot.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                slot.style.opacity = '0';
+                slot.style.transform = 'scale(0.7)';
+                await new Promise(resolve => setTimeout(resolve, 150)); // 150ms between each
+            }
+        }
+
+        async function resetAnimatedSlots() {
+            const slots = document.querySelectorAll('.craft-slot');
+            slots.forEach(slot => {
+                slot.style.transition = '';
+                slot.style.opacity = '1';
+                slot.style.transform = 'scale(1)';
+            });
+        }
+
+        async function doCraft() {
+            if (selectedItems.length < 3 || selectedItems.length > 10) {
+                if (typeof showToast === 'function') showToast('Select 3-10 items', 'warning'); else alert('Select 3-10 items');
+                return;
+            }
+            
+            const btn = document.getElementById('craft-btn');
+            const slotsContainer = document.getElementById('craft-slots-container');
+            btn.disabled = true;
+            btn.textContent = 'Crafting...';
+            
+            const itemIds = selectedItems.map(item => item.gift.id);
             
             try {
-                const response = await fetch(`/api/craft?user_id=${currentUserId}`, {
+                const url = `/api/craft?user_id=${currentUserId}`;
+                
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ items: itemIds })
@@ -158,98 +910,451 @@
                 
                 const data = await response.json();
                 
-                if (data.status === 'ok') {
-                    alert('✅ Успешно скрафтено: ' + data.result);
+                if (data.status === 'ok' && data.result_gift) {
+                    currentCraftedGift = data.result_gift;
+                    currentCraftedGift.reward = data.reward;
+                    
+                    // Animate slots disappearing one by one
+                    await animateSlotsDissapearing();
+                    
+                    // Show win screen after animation
+                    showWinScreen();
+                    
+                    // Reset animations and clear selection
+                    await resetAnimatedSlots();
                     selectedItems = [];
                     updateSlots();
-                    loadInventory();
+                    
+                    await loadInventory();  // ← FIXED: Now properly waits for inventory to reload
+                    loadBalance();
+                    await loadPendingWithdrawals();
+                    
+                    btn.disabled = false;
+                    btn.textContent = 'CRAFT';
                 } else {
-                    alert('❌ Ошибка: ' + data.error);
+                    const errorMsg = data.error || data.message || 'Unknown error';
+                    if (typeof showToast === 'function') showToast(errorMsg, 'error'); else alert('ERROR: ' + errorMsg);
+                    btn.disabled = false;
+                    btn.textContent = 'CRAFT';
                 }
             } catch (e) {
-                alert('❌ Ошибка крафта');
+                if (typeof showToast === 'function') showToast(e.message, 'error'); else alert('ERROR: ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'CRAFT';
+            }
+        }
+
+        function showWinScreen() {
+            if (!currentCraftedGift) return;
+            
+            let imgSrc = currentCraftedGift.image;
+            if (!imgSrc.startsWith('/')) {
+                imgSrc = '/static/img/gifts/' + imgSrc;
+            }
+            
+            document.getElementById('win-image').src = imgSrc;
+            document.getElementById('win-gift-name').textContent = currentCraftedGift.name;
+            document.getElementById('win-gift-price').textContent = currentCraftedGift.reward.toFixed(2) + ' TON';
+            document.getElementById('win-overlay').classList.add('active');
+        }
+
+        function closeCraftWin() {
+            document.getElementById('win-overlay').classList.remove('active');
+            currentCraftedGift = null;
+        }
+
+        function sellCraftedGift() {
+            if (!currentCraftedGift || !currentUserId) {
+                if (typeof showToast === 'function') showToast('Gift not found', 'error'); else alert('ERROR: Gift not found');
+                return;
+            }
+            
+            fetch(`/api/user/sell-all`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: currentUserId, gift_ids: [currentCraftedGift.id] })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    // compute icon for crafted gift
+                    let iconSrc = '/static/img/default.png';
+                    try { if (currentCraftedGift && currentCraftedGift.image) iconSrc = currentCraftedGift.image.startsWith('/') ? currentCraftedGift.image : '/static/img/gifts/' + currentCraftedGift.image; } catch (e) { iconSrc = '/static/img/default.png'; }
+
+                    if (typeof showToast === 'function') showToast('Sold for ' + currentCraftedGift.reward.toFixed(2) + ' TON. New balance: ' + (data.new_balance || 0).toFixed(2) + ' TON', 'success', iconSrc); else alert('Sold for ' + currentCraftedGift.reward.toFixed(2) + ' TON');
+                    closeCraftWin();
+                    loadProfileData();
+                    loadPendingWithdrawals();
+                } else {
+                    if (typeof showToast === 'function') showToast(data.error || 'Sale failed', 'error'); else alert('ERROR: ' + (data.error || 'Sale failed'));
+                }
+            })
+            .catch(err => { if (typeof showToast === 'function') showToast(err.message, 'error'); else alert('ERROR: ' + err.message); });
+        }
+        
+        async function loadProfileData() {
+            await loadBalance();
+            await loadInventory();
+        }
+    </script>
+    
+    <!-- TonConnect UI Container -->
+    <ton-connect-ui></ton-connect-ui>
+    
+    <!-- Ensure TonConnectUI is loaded -->
+    <script>
+        // Pre-check that TonConnectUI loaded
+        window.addEventListener('load', () => {
+            if (typeof TonConnectUI === 'undefined') {
+                console.warn('[WARN] TonConnectUI not loaded from unpkg, attempting fallback...');
+                // Try alternative CDN
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@tonconnect/ui@latest/dist/tonconnect-ui.min.js';
+                script.async = true;
+                document.head.appendChild(script);
+            } else {
+                console.log('[OK] TonConnectUI loaded successfully');
+            }
+        });
+    </script>
+    
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    
+    <!-- Top-up Modal (Bottom Sheet) -->
+    <div id="topup-modal" class="modal-overlay" style="position: fixed; bottom: 0; left: 0; right: 0; top: 0; width: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0;">
+        <div class="modal-content" style="background: var(--card); color: var(--text); border-radius: 24px 24px 0 0; padding: 24px 20px 20px; width: 100%; max-width: 100%; text-align: center; max-height: 80vh; overflow-y: auto; box-shadow: 0 -4px 24px rgba(0,0,0,0.25); animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Пополнить баланс</h2>
+                <button class="modal-close" onclick="closeTopupModal()" aria-label="Close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; transition: color 0.2s; border-radius: 8px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-light)'">×</button>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <!-- TON Button -->
+                <button onclick="selectTopupMethod('ton')" id="ton-topup-btn" disabled style="flex: 1; padding: 16px 12px; background: #cccccc; border: 2px solid #999999; border-radius: 14px; cursor: not-allowed; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: #666666; box-shadow: none; opacity: 0.6;">
+                    <img src="/static/img/ton.png" style="width: 40px; height: 40px; object-fit: contain; opacity: 0.6;">
+                    <div style="font-size: 14px; font-weight: 800;">TON</div>
+                    <div style="font-size: 12px; font-weight: 500;">Недоступно</div>
+                </button>
+                
+                <!-- Stars Button -->
+                <button onclick="selectTopupMethod('stars')" id="stars-topup-btn" style="flex: 1; padding: 16px 12px; background: var(--card); border: 2px solid var(--border); border-radius: 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <img src="/static/img/star.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <div style="font-size: 14px; font-weight: 800; color: var(--text);">Telegram Stars</div>
+                    <div style="font-size: 12px; color: var(--text-light); font-weight: 500;">1 звезда</div>
+                </button>
+            </div>
+            
+            <!-- Amount Input -->
+            <div id="topup-amount-section" style="display: none; margin-bottom: 24px;">
+                <label style="font-size: 13px; color: var(--text-light); margin-bottom: 10px; display: block; text-align: left; font-weight: 600; letter-spacing: 0.3px;">Сумма:</label>
+                <input type="number" id="topup-amount-input" placeholder="1" min="1" step="1" style="width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 15px; font-weight: 600; transition: border-color 0.2s; box-sizing: border-box;" onpaste="return false" oncopy="return false">
+            </div>
+            
+            <!-- Confirm Button -->
+            <button id="topup-confirm-btn" onclick="confirmTopup()" style="display: none; width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), rgba(0,100,200,0.8)); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,100,200,0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(0,100,200,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(0,100,200,0.3)';">
+                Пополнить баланс
+            </button>
+        </div>
+    </div>
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        #topup-amount-input::-webkit-outer-spin-button,
+        #topup-amount-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #topup-amount-input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        #topup-amount-input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,100,200,0.1);
+        }
+        #topup-amount-input::placeholder {
+            color: var(--text-light);
+            opacity: 0.7;
+        }
+    </style>
+    
+    <script>
+        let selectedTopupMethod = 'stars';
+        
+        function openTopupModal() {
+            document.getElementById('topup-modal').style.display = 'flex';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.zIndex = '999';
+            selectedTopupMethod = 'stars';
+            updateTopupUI();
+        }
+        
+        function closeTopupModal() {
+            document.getElementById('topup-modal').style.display = 'none';
+            const bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.zIndex = 'auto';
+            document.getElementById('topup-amount-section').style.display = 'none';
+            document.getElementById('topup-confirm-btn').style.display = 'none';
+        }
+        
+        function resetTopupForm() {
+            document.getElementById('topup-amount-input').value = '';
+            document.getElementById('topup-amount-section').style.display = 'none';
+            document.getElementById('topup-confirm-btn').style.display = 'none';
+            document.getElementById('ton-topup-btn').style.background = 'linear-gradient(135deg, var(--primary), rgba(0,100,200,0.2))';
+            document.getElementById('ton-topup-btn').style.borderColor = 'var(--primary)';
+            document.getElementById('stars-topup-btn').style.background = 'var(--card)';
+            document.getElementById('stars-topup-btn').style.borderColor = 'var(--border)';
+        }
+        
+        function selectTopupMethod(method) {
+            if (method === 'ton') return; // TON disabled
+            selectedTopupMethod = method;
+            updateTopupUI();
+        }
+        
+        function updateTopupUI() {
+            const starsBtn = document.getElementById('stars-topup-btn');
+            const input = document.getElementById('topup-amount-input');
+            
+            // Setup for Stars
+            starsBtn.style.background = 'linear-gradient(135deg, #FFD700, rgba(255,215,0,0.2))';
+            starsBtn.style.borderColor = '#FFD700';
+            starsBtn.style.color = '#333';
+            
+            input.type = 'number';
+            input.step = '1';
+            input.min = '1';
+            input.value = '';
+            input.placeholder = '1';
+            input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            document.getElementById('topup-amount-section').style.display = 'block';
+            document.getElementById('topup-confirm-btn').style.display = 'block';
+        }
+        
+        function usePreset(amount) {
+            document.getElementById('topup-amount-input').value = amount;
+        }
+        
+        function confirmTopup() {
+            const amount = document.getElementById('topup-amount-input').value;
+            
+            if (!amount || parseInt(amount) <= 0) {
+                alert('Введите корректную сумму');
+                return;
+            }
+            
+            if (selectedTopupMethod === 'stars') {
+                processTopupStars(parseInt(amount));
+            }
+        }
+        
+        async function processTopupTon(amount) {
+            try {
+                if (typeof showNotification === 'function') showNotification('Инициализация платежа TON...', 'info');
+                
+                if (typeof initTONConnect === 'function') {
+                    await initTONConnect();
+                }
+                
+                if (typeof TonConnect !== 'undefined' && TonConnect.topUp) {
+                    TonConnect.topUp({
+                        amount: parseFloat(amount),
+                        description: 'Top-up balance in Game'
+                    });
+                } else if (typeof window.tonConnectUI !== 'undefined') {
+                    window.tonConnectUI.sendTransaction({
+                        messages: [{
+                            destination: 'EQCjq1x-XnJXfOc0UxDwGXHXZQ5gRWPHj8TIKXqKqWEwJR6F',
+                            amount: Math.round(parseFloat(amount) * 1e9),
+                            payload: ''
+                        }]
+                    });
+                }
+            } catch (error) {
+                if (typeof showNotification === 'function') showNotification('Ошибка: ' + error.message, 'error');
+            }
+        }
+        
+        async function processTopupStars(amount) {
+            const confirmBtn = document.getElementById('topup-confirm-btn');
+            const originalText = confirmBtn.textContent;
+            
+            try {
+                const user_id = window.tgUserId || (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.id) || 'anonymous';
+                
+                // Show loading state
+                confirmBtn.textContent = 'Загрузка...';
+                confirmBtn.disabled = true;
+                console.log('[Payment] Creating invoice for', amount, 'stars, user:', user_id);
+                
+                const createResponse = await fetch('/api/create-stars-invoice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user_id, stars_amount: parseInt(amount) })
+                });
+                
+                if (!createResponse.ok) {
+                    console.error('[Payment] Create invoice HTTP error:', createResponse.status);
+                    throw new Error('Ошибка сервера: ' + createResponse.status);
+                }
+                
+                const invoiceData = await createResponse.json();
+                console.log('[Payment] Invoice response:', invoiceData);
+                
+                if (!invoiceData.success) {
+                    console.error('[Payment] Invoice error:', invoiceData.error);
+                    throw new Error(invoiceData.error || 'Не удалось создать счет');
+                }
+                
+                if (!invoiceData.invoice_link) {
+                    console.error('[Payment] No invoice link in response');
+                    throw new Error('Ссылка на платеж не получена');
+                }
+                
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
+                
+                console.log('[Payment] Opening Telegram invoice:', invoiceData.invoice_link.substring(0, 50) + '...');
+                
+                if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && typeof window.Telegram.WebApp.openInvoice === 'function') {
+                    let callbackFired = false;
+                    let initialBalance = null;
+                    
+                    // Get initial balance for verification
+                    try {
+                        const balanceResp = await fetch(`/api/user/get?user_id=${user_id}`);
+                        const balanceData = await balanceResp.json();
+                        if (balanceData.status === 'ok') {
+                            initialBalance = parseFloat(balanceData.balance || 0);
+                            console.log('[Payment] Initial balance:', initialBalance);
+                        }
+                    } catch (e) {
+                        console.error('[Payment] Failed to get initial balance:', e);
+                    }
+                    
+                    // Set timeout in case callback doesn't fire
+                    const timeoutId = setTimeout(async () => {
+                        if (!callbackFired) {
+                            console.log('[Payment] Callback timeout - checking balance...');
+                            clearTimeout(timeoutId);
+                            
+                            // Auto-check payment by polling balance
+                            let paymentConfirmed = false;
+                            for (let attempt = 0; attempt < 10; attempt++) {
+                                await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1 sec
+                                
+                                try {
+                                    const checkResp = await fetch(`/api/user/get?user_id=${user_id}&t=${Date.now()}`);
+                                    const checkData = await checkResp.json();
+                                    if (checkData.status === 'ok') {
+                                        const newBalance = parseFloat(checkData.balance || 0);
+                                        const tonEquivalent = (amount * 0.01).toFixed(4);
+                                        console.log('[Payment] Checked balance:', newBalance, '(was:', initialBalance, ')');
+                                        
+                                        if (newBalance > initialBalance) {
+                                            console.log('[Payment] ✅ Balance increased - payment successful!');
+                                            paymentConfirmed = true;
+                                            break;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('[Payment] Error checking balance:', e);
+                                }
+                            }
+                            
+                            closeTopupModal();
+                            
+                            if (paymentConfirmed) {
+                                alert(`✅ Спасибо за пополнение!\n${amount} Stars = ${(amount * 0.01).toFixed(4)} TON`);
+                                setTimeout(() => location.reload(), 1000);
+                            } else {
+                                alert('⏳ Платеж обрабатывается...\nПожалуйста, закройте эту страницу и вернитесь через несколько минут для проверки баланса.');
+                                setTimeout(() => location.reload(), 3000);
+                            }
+                        }
+                    }, 30000); // 30 second timeout
+                    
+                    window.Telegram.WebApp.openInvoice(invoiceData.invoice_link, async (status) => {
+                        callbackFired = true;
+                        clearTimeout(timeoutId);
+                        console.log('[Payment] Invoice callback with status:', status);
+                        
+                        if (status === 'paid') {
+                            await confirmStarsPayment(invoiceData.invoice_id, user_id, amount);
+                            closeTopupModal();
+                            alert(`✅ Спасибо за пополнение!\n${amount} Stars = ${invoiceData.ton_equivalent.toFixed(4)} TON`);
+                        } else if (status === 'failed') {
+                            alert('❌ Платёж не прошёл. Попробуйте еще раз.');
+                        } else if (status === 'cancelled') {
+                            alert('❌ Платёж отменён');
+                        } else {
+                            console.log('[Payment] Unknown status:', status);
+                            alert('Статус платежа: ' + status);
+                        }
+                    });
+                } else {
+                    console.log('[Payment] Telegram WebApp not available, processing directly');
+                    await confirmStarsPayment(invoiceData.invoice_id, user_id, amount);
+                    closeTopupModal();
+                    alert(`✅ Платёж обработан!\n${amount} Stars = ${invoiceData.ton_equivalent.toFixed(4)} TON`);
+                }
+            } catch (error) {
+                console.error('[Payment] Final error:', error);
+                console.error('[Payment] Error type:', error.constructor.name);
+                confirmBtn.textContent = originalText;
+                confirmBtn.disabled = false;
+                
+                // Show more detailed error
+                let errorMsg = error.message;
+                if (error.message.includes('WebAppInvoiceUrlInvalid')) {
+                    errorMsg = 'Неправильный формат ссылки платежа\n(свяжитесь с поддержкой)';
+                } else if (error.message.includes('демо')) {
+                    errorMsg = 'Сервер в демо режиме\n(платежи недоступны)';
+                }
+                
+                alert('⚠️ Ошибка платежа:\n' + errorMsg);
+            }
+        }
+        
+        async function confirmStarsPayment(invoiceId, userId, starsAmount) {
+            try {
+                const response = await fetch('/api/process-stars-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        invoice_id: invoiceId,
+                        user_id: userId,
+                        stars_amount: parseInt(starsAmount)
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.error('[Stars Payment] API error:', response.status);
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    if (typeof reloadBalance === 'function') reloadBalance();
+                    // Reload page to refresh balance
+                    setTimeout(() => location.reload(), 1000);
+                    console.log('[Stars Payment] Success:', data);
+                } else {
+                    console.error('[Stars Payment] Server error:', data);
+                    alert(data.message || 'Ошибка при обработке платежа');
+                }
+            } catch (error) {
+                console.error('[Stars Payment] Exception:', error);
+                alert('Ошибка: ' + error.message);
             }
         }
     </script>
-
-    <style>
-        .crafts-container {
-            background: white;
-        }
-
-        .craft-slots {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .craft-slot {
-            aspect-ratio: 1;
-            border: 2px dashed #ddd;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            cursor: pointer;
-            overflow: hidden;
-        }
-
-        .craft-slot img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            cursor: pointer;
-        }
-
-        .craft-info {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            padding: 10px;
-            background: #f0f0f5;
-            border-radius: 8px;
-        }
-
-        .btn-craft {
-            width: 100%;
-            padding: 15px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .btn-craft:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .craft-item {
-            aspect-ratio: 1;
-            border-radius: 10px;
-            border: 2px solid #ddd;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .craft-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .craft-item:active {
-            transform: scale(0.95);
-        }
-    </style>
 </body>
 </html>
