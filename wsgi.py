@@ -13,6 +13,9 @@ sys.dont_write_bytecode = True
 # Import Flask application
 from app import app as application
 
+# Export for gunicorn (wsgi:app)
+app = application
+
 # For debugging
 if __name__ == "__main__":
     application.run()
