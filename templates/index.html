@@ -411,7 +411,12 @@
                         console.error('[Payment] Error message:', e.message);
                         console.error('[Payment] Error stack:', e.stack);
                         
-                        // Don't try fallback, just continue polling
+                        // Fallback: try to open invoice in new window
+                        if (invoiceData.invoice_link) {
+                            console.log('[Payment] Fallback after error: opening invoice link in new window');
+                            window.open(invoiceData.invoice_link, '_blank');
+                        }
+                        
                         console.log('[Payment] Continuing to poll for balance changes...');
                     }
                 } else {
@@ -420,7 +425,15 @@
                     console.log('[Payment] window.Telegram.WebApp:', typeof window.Telegram?.WebApp);
                     console.log('[Payment] window.Telegram.WebApp.openInvoice:', typeof window.Telegram?.WebApp?.openInvoice);
                     
-                    console.log('[Payment] Fallback: continuing to poll for balance changes...');
+                    // Fallback: open invoice in new window if WebApp not available
+                    if (invoiceData.invoice_link) {
+                        console.log('[Payment] Fallback: opening invoice link in new window:', invoiceData.invoice_link);
+                        window.open(invoiceData.invoice_link, '_blank');
+                    } else {
+                        console.log('[Payment] Fallback: no invoice_link available');
+                    }
+                    
+                    console.log('[Payment] Continuing to poll for balance changes...');
                 }
                 
             } catch (error) {
