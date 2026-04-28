@@ -1059,6 +1059,12 @@ async function initIndexPage() {
             if (adminBtn) adminBtn.style.display = 'block';
         }
     } else {
+        // Fallback for browser testing (not in Telegram)
+        console.log('[INDEX] Telegram not available, using test user');
+        currentUserId = 'test_user_' + Math.random().toString(36).substr(2, 9);
+        document.getElementById('header-username').textContent = 'Test User';
+    }
+    } else {
         currentUserId = 123;
         console.log('[INDEX] Using test user 123');
         document.getElementById('header-username').textContent = 'Test User';
