@@ -428,9 +428,23 @@
                     // Fallback: open invoice in new window if WebApp not available
                     if (invoiceData.invoice_link) {
                         console.log('[Payment] Fallback: opening invoice link in new window:', invoiceData.invoice_link);
-                        window.open(invoiceData.invoice_link, '_blank');
+                        console.log('[Payment] Trying window.open()...');
+                        try {
+                            const newWindow = window.open(invoiceData.invoice_link, '_blank');
+                            if (!newWindow) {
+                                console.warn('[Payment] window.open() returned null - popup might be blocked');
+                                // Show the link in the button instead
+                                confirmBtn.innerHTML = `<a href="${invoiceData.invoice_link}" target="_blank" style="color: white; text-decoration: none; display: block; width: 100%; height: 100%;">Открыть платёж →</a>`;
+                                confirmBtn.disabled = false;
+                            }
+                        } catch (e) {
+                            console.error('[Payment] window.open() error:', e);
+                            // Show the link in the button instead
+                            confirmBtn.innerHTML = `<a href="${invoiceData.invoice_link}" target="_blank" style="color: white; text-decoration: none; display: block; width: 100%; height: 100%;">Открыть платёж →</a>`;
+                            confirmBtn.disabled = false;
+                        }
                     } else {
-                        console.log('[Payment] Fallback: no invoice_link available');
+                        console.error('[Payment] Fallback: no invoice_link available!');
                     }
                     
                     console.log('[Payment] Continuing to poll for balance changes...');
