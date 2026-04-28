@@ -5,5 +5,4 @@ requests==2.31.0
 python-dotenv==1.0.0
 PyJWT==2.12.1
 python-telegram-bot==22.7
-aiohttp==3.8.5
 gunicorn==21.2.0
