@@ -2055,18 +2055,10 @@ def bot_get_promos():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 # ===== TELEGRAM BOT INTEGRATION =====
-
-try:
-    from bot_handler import start_bot_async
-    
-    # Запустить бота в отдельном потоке при старте приложения
-    start_bot_async(TELEGRAM_BOT_TOKEN, get_user_data, save_users, user_data, promo_codes)
-    print("[✅] Telegram Bot started in background")
-    
-except ImportError as e:
-    print(f"[WARNING] Bot handler not found: {e}")
-except Exception as e:
-    print(f"[WARNING] Telegram Bot error: {e}")
+# NOTE: Bot is NOT started on production (Render)
+# Bot must run locally with: python bot_run_local.py
+# This prevents asyncio conflicts with Flask/Gunicorn
+print("[ℹ️] Telegram Bot disabled on production - run locally with: python bot_run_local.py")
 
 # ===== TELEGRAM STARS API =====
 

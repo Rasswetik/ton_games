@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: rps-games-api
+    runtime: python
+    pythonVersion: 3.13
+    plan: free
+    repo: https://github.com/Rasswetik/ton_games
+    branch: main
+    startCommand: gunicorn --bind 0.0.0.0:$PORT wsgi:app --timeout 120 --workers 2
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: USE_DB
+        value: "true"
+      - key: PORT
+        value: "3000"
